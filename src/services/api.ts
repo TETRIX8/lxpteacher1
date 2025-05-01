@@ -229,7 +229,7 @@ export const disciplinesAPI = {
 
   getStudentScores: async (disciplineId: string, groupId: string) => {
     const query = `
-    query GetDisciplineStudentsByGroupForScoreJournal($input: GetDisciplineScoreJournalInput!, $name: String, $learningGroupId: UUID!, $learningSubgroupId: UUID, $withSearchStudent: Boolean = true, $disciplineId: UUID) {
+    query GetDisciplineStudentsByGroupForScoreJournal($input: GetDisciplineScoreJournalInput!, $name: String, $learningGroupId: UUID!, $learningSubgroupId: UUID, $withSearchStudent: Boolean = true) {
       getDisciplineScoreJournal(input: $input) {
         learningGroups {
           averageScore

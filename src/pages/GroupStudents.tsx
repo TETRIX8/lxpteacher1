@@ -50,12 +50,14 @@ const GroupStudents = () => {
   const [averageScore, setAverageScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('list');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       if (!disciplineId || !groupId) return;
       
       setLoading(true);
+      setError(null);
       try {
         // Get students
         const studentData = await disciplinesAPI.searchStudentsInGroup(groupId, disciplineId);
@@ -66,9 +68,12 @@ const GroupStudents = () => {
         if (scoreGroups && scoreGroups.length > 0) {
           setScores(scoreGroups[0].students || []);
           setAverageScore(scoreGroups[0].averageScore);
+        } else {
+          console.log('No score data returned for this group');
         }
       } catch (error) {
         console.error('Error fetching student data', error);
+        setError('Не удалось загрузить данные студентов');
         toast.error('Не удалось загрузить данные студентов');
       } finally {
         setLoading(false);
