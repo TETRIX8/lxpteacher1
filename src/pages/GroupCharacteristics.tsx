@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,10 @@ interface Student {
     middleName?: string;
     avatar?: string;
   };
+  learningGroups?: {
+    learningGroupId: string;
+    expelledAt: string | null;
+  }[];
 }
 
 interface ScoreData {
@@ -42,6 +47,10 @@ interface ScoreData {
       lastName: string;
       middleName?: string;
     };
+    learningGroups?: {
+      learningGroupId: string;
+      expelledAt: string | null;
+    }[];
   };
   scoreForAnsweredTasks: number;
   scoreForAnsweredRetakeTasks: number;
@@ -51,18 +60,34 @@ interface CharacteristicKeyword {
   id: string;
   text: string;
   color: string;
+  category: 'positive' | 'neutral' | 'negative';
 }
 
-// Available keyword options
+// Available keyword options - expanded with more options including negative ones
 const availableKeywords: CharacteristicKeyword[] = [
-  { id: '1', text: 'Хорошо учится', color: 'bg-green-100' },
-  { id: '2', text: 'Активный на занятиях', color: 'bg-blue-100' },
-  { id: '3', text: 'Творческий подход', color: 'bg-purple-100' },
-  { id: '4', text: 'Лидерские качества', color: 'bg-yellow-100' },
-  { id: '5', text: 'Требуется внимание', color: 'bg-red-100' },
-  { id: '6', text: 'Способный к аналитике', color: 'bg-indigo-100' },
-  { id: '7', text: 'Ответственный', color: 'bg-teal-100' },
-  { id: '8', text: 'Организованный', color: 'bg-cyan-100' },
+  // Positive characteristics
+  { id: '1', text: 'Хорошо учится', color: 'bg-green-100', category: 'positive' },
+  { id: '2', text: 'Активный на занятиях', color: 'bg-blue-100', category: 'positive' },
+  { id: '3', text: 'Творческий подход', color: 'bg-purple-100', category: 'positive' },
+  { id: '4', text: 'Лидерские качества', color: 'bg-yellow-100', category: 'positive' },
+  { id: '6', text: 'Способный к аналитике', color: 'bg-indigo-100', category: 'positive' },
+  { id: '7', text: 'Ответственный', color: 'bg-teal-100', category: 'positive' },
+  { id: '8', text: 'Организованный', color: 'bg-cyan-100', category: 'positive' },
+  { id: '9', text: 'Быстро обучается', color: 'bg-green-100', category: 'positive' },
+  { id: '10', text: 'Внимателен к деталям', color: 'bg-blue-100', category: 'positive' },
+  
+  // Neutral characteristics
+  { id: '11', text: 'Средняя успеваемость', color: 'bg-gray-100', category: 'neutral' },
+  { id: '12', text: 'Работает в команде', color: 'bg-blue-50', category: 'neutral' },
+  { id: '13', text: 'Следует инструкциям', color: 'bg-gray-100', category: 'neutral' },
+  
+  // Negative characteristics
+  { id: '5', text: 'Требуется внимание', color: 'bg-red-100', category: 'negative' },
+  { id: '14', text: 'Часто пропускает занятия', color: 'bg-red-100', category: 'negative' },
+  { id: '15', text: 'Низкая дисциплина', color: 'bg-red-100', category: 'negative' },
+  { id: '16', text: 'Трудности с заданиями', color: 'bg-orange-100', category: 'negative' },
+  { id: '17', text: 'Не выполняет домашние задания', color: 'bg-red-100', category: 'negative' },
+  { id: '18', text: 'Пассивен на занятиях', color: 'bg-orange-100', category: 'negative' },
 ];
 
 interface StudentCharacteristic {
@@ -88,6 +113,7 @@ const GroupCharacteristics = () => {
   const [averageScore, setAverageScore] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<string>('');
+  const [keywordCategory, setKeywordCategory] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all');
   
   const isMobile = useIsMobile();
   
@@ -108,12 +134,28 @@ const GroupCharacteristics = () => {
       try {
         // Get students
         const studentData = await disciplinesAPI.searchStudentsInGroup(groupId, disciplineId);
-        setStudents(studentData);
+        
+        // Filter out expelled/dismissed students
+        const activeStudents = studentData.filter(student => {
+          const learningGroups = student.learningGroups || student.user?.student?.learningGroups || [];
+          // Check if student is not expelled from this group
+          const groupMembership = learningGroups.find(g => g.learningGroupId === groupId);
+          return !groupMembership?.expelledAt;
+        });
+        
+        setStudents(activeStudents);
         
         // Get scores
         const scoreGroups = await disciplinesAPI.getStudentScores(disciplineId, groupId);
         if (scoreGroups && scoreGroups.length > 0) {
-          setScores(scoreGroups[0].students || []);
+          // Filter scores to only include active students
+          const activeScores = scoreGroups[0].students?.filter(score => {
+            const learningGroups = score.student?.learningGroups || [];
+            const groupMembership = learningGroups.find(g => g.learningGroupId === groupId);
+            return !groupMembership?.expelledAt;
+          }) || [];
+          
+          setScores(activeScores);
           setAverageScore(scoreGroups[0].averageScore);
           
           // Set discipline name
@@ -122,7 +164,7 @@ const GroupCharacteristics = () => {
           }
           
           // Initialize form values with student IDs
-          const initialCharacteristics = studentData.map(student => ({
+          const initialCharacteristics = activeStudents.map(student => ({
             studentId: student.user.id,
             keywords: [],
             comment: ''
@@ -268,6 +310,11 @@ const GroupCharacteristics = () => {
     return availableKeywords.find(keyword => keyword.id === id) || null;
   };
 
+  // Filter keywords based on selected category
+  const filteredKeywords = keywordCategory === 'all' 
+    ? availableKeywords
+    : availableKeywords.filter(keyword => keyword.category === keywordCategory);
+
   // Component for preview content
   const CharacteristicPreview = ({content}: {content: string}) => {
     return (
@@ -282,11 +329,11 @@ const GroupCharacteristics = () => {
       <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
         <div>
           <Link to={`/dashboard/disciplines/${disciplineId}/groups/${groupId}`}>
-            <Button variant="outline" size="sm" className="mb-2">&larr; Назад к студентам</Button>
+            <Button variant="outline" size="sm" className="mb-2 hover:scale-105 transition-transform">&larr; Назад к студентам</Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Характеристика группы {groupName}</h1>
-          {disciplineName && <p className="text-gray-600">Дисциплина: {disciplineName}</p>}
-          {averageScore !== null && <p className="text-gray-600">Средний балл: {averageScore}</p>}
+          <h1 className="text-2xl font-bold tracking-tight animate-fade-in">Характеристика группы {groupName}</h1>
+          {disciplineName && <p className="text-gray-600 animate-slide-in">Дисциплина: {disciplineName}</p>}
+          {averageScore !== null && <p className="text-gray-600 animate-slide-in">Средний балл: {averageScore}</p>}
         </div>
       </div>
 
@@ -302,7 +349,7 @@ const GroupCharacteristics = () => {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(generatePDF)} className="space-y-8">
             <div className="space-y-6">
-              <Card>
+              <Card className="animate-fade-in">
                 <CardHeader>
                   <CardTitle>Комментарий для всей группы</CardTitle>
                   <CardDescription>
@@ -329,7 +376,40 @@ const GroupCharacteristics = () => {
               </Card>
               
               <div className="space-y-4">
-                <h2 className="text-xl font-medium">Характеристика студентов</h2>
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2">
+                  <h2 className="text-xl font-medium animate-slide-in">Характеристика студентов</h2>
+                  
+                  <div className="flex gap-2 flex-wrap animate-fade-in">
+                    <Badge 
+                      variant={keywordCategory === 'all' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform"
+                      onClick={() => setKeywordCategory('all')}
+                    >
+                      Все характеристики
+                    </Badge>
+                    <Badge 
+                      variant={keywordCategory === 'positive' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-green-100 text-green-800 hover:bg-green-200"
+                      onClick={() => setKeywordCategory('positive')}
+                    >
+                      Положительные
+                    </Badge>
+                    <Badge 
+                      variant={keywordCategory === 'neutral' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-gray-100 text-gray-800 hover:bg-gray-200"
+                      onClick={() => setKeywordCategory('neutral')}
+                    >
+                      Нейтральные
+                    </Badge>
+                    <Badge 
+                      variant={keywordCategory === 'negative' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-red-100 text-red-800 hover:bg-red-200"
+                      onClick={() => setKeywordCategory('negative')}
+                    >
+                      Отрицательные
+                    </Badge>
+                  </div>
+                </div>
                 
                 {students.map((student, index) => {
                   const studentScore = scores.find(
@@ -340,9 +420,12 @@ const GroupCharacteristics = () => {
                   const totalScore = studentScore 
                     ? (studentScore.scoreForAnsweredTasks || 0) + (studentScore.scoreForAnsweredRetakeTasks || 0) 
                     : 0;
+
+                  // Get selected keywords for this student
+                  const selectedKeywordIds = form.getValues(`studentCharacteristics.${index}.keywords`) || [];
                   
                   return (
-                    <Card key={student.user.id} className="border-l-4 border-l-edu-primary">
+                    <Card key={student.user.id} className="border-l-4 border-l-edu-primary animate-fade-in hover:shadow-md transition-shadow">
                       <CardHeader>
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-lg">{fullName}</CardTitle>
@@ -355,14 +438,47 @@ const GroupCharacteristics = () => {
                         <div>
                           <h4 className="text-sm font-medium mb-2">Ключевые характеристики</h4>
                           <div className="flex flex-wrap gap-2">
-                            {availableKeywords.map(keyword => {
-                              const isSelected = form.getValues(`studentCharacteristics.${index}.keywords`)?.includes(keyword.id);
+                            {filteredKeywords.map(keyword => {
+                              const isSelected = selectedKeywordIds.includes(keyword.id);
+                              
+                              let badgeClasses = "cursor-pointer transition-all duration-200 hover:scale-105 ";
+                              
+                              // Apply different styling based on category
+                              if (isSelected) {
+                                switch(keyword.category) {
+                                  case 'positive':
+                                    badgeClasses += "bg-green-600 hover:bg-green-700";
+                                    break;
+                                  case 'negative':
+                                    badgeClasses += "bg-red-600 hover:bg-red-700";
+                                    break;
+                                  case 'neutral':
+                                    badgeClasses += "bg-gray-600 hover:bg-gray-700";
+                                    break;
+                                  default:
+                                    badgeClasses += "bg-edu-primary hover:bg-edu-primary/90";
+                                }
+                              } else {
+                                switch(keyword.category) {
+                                  case 'positive':
+                                    badgeClasses += "border-green-300 hover:bg-green-100 text-green-800";
+                                    break;
+                                  case 'negative':
+                                    badgeClasses += "border-red-300 hover:bg-red-100 text-red-800";
+                                    break;
+                                  case 'neutral':
+                                    badgeClasses += "border-gray-300 hover:bg-gray-100 text-gray-800";
+                                    break;
+                                  default:
+                                    badgeClasses += "";
+                                }
+                              }
                               
                               return (
                                 <Badge
                                   key={keyword.id}
                                   variant={isSelected ? "default" : "outline"}
-                                  className={`cursor-pointer ${isSelected ? 'bg-edu-primary' : ''}`}
+                                  className={badgeClasses}
                                   onClick={() => handleKeywordToggle(index, keyword.id)}
                                 >
                                   {keyword.text}
@@ -376,11 +492,12 @@ const GroupCharacteristics = () => {
                           control={form.control}
                           name={`studentCharacteristics.${index}.comment`}
                           render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="animate-fade-in">
                               <FormLabel>Индивидуальный комментарий</FormLabel>
                               <FormControl>
                                 <Textarea 
                                   placeholder="Добавьте индивидуальную характеристику..." 
+                                  className="resize-vertical focus:ring-2 focus:ring-edu-primary/30 transition-all"
                                   {...field} 
                                 />
                               </FormControl>
@@ -399,7 +516,7 @@ const GroupCharacteristics = () => {
                 type="button" 
                 variant="outline"
                 onClick={() => handlePreview()}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
               >
                 <Eye className="h-4 w-4" />
                 Предпросмотр
@@ -407,7 +524,7 @@ const GroupCharacteristics = () => {
               <Button 
                 type="submit" 
                 disabled={generating}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
               >
                 {generating ? (
                   <>
@@ -429,7 +546,7 @@ const GroupCharacteristics = () => {
       {/* Responsive Preview - Dialog for desktop and Drawer for mobile */}
       {isMobile ? (
         <Drawer open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DrawerContent>
+          <DrawerContent className="animate-slide-in-right">
             <DrawerHeader>
               <DrawerTitle>Предпросмотр характеристики</DrawerTitle>
             </DrawerHeader>
@@ -437,13 +554,13 @@ const GroupCharacteristics = () => {
               <CharacteristicPreview content={previewContent} />
             </div>
             <DrawerFooter>
-              <Button onClick={() => setIsPreviewOpen(false)}>Закрыть</Button>
+              <Button onClick={() => setIsPreviewOpen(false)} className="hover:scale-105 transition-transform">Закрыть</Button>
             </DrawerFooter>
           </DrawerContent>
         </Drawer>
       ) : (
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="sm:max-w-[800px]">
+          <DialogContent className="sm:max-w-[800px] animate-scale-in">
             <DialogHeader>
               <DialogTitle>Предпросмотр характеристики</DialogTitle>
               <DialogDescription>
@@ -452,7 +569,7 @@ const GroupCharacteristics = () => {
             </DialogHeader>
             <CharacteristicPreview content={previewContent} />
             <DialogFooter>
-              <Button onClick={() => setIsPreviewOpen(false)}>Закрыть</Button>
+              <Button onClick={() => setIsPreviewOpen(false)} className="hover:scale-105 transition-transform">Закрыть</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
