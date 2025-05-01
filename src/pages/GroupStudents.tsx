@@ -7,6 +7,7 @@ import { disciplinesAPI } from '@/services/api';
 import { toast } from '@/components/ui/sonner';
 import { DateTime } from 'luxon';
 import { Badge } from '@/components/ui/badge';
+import { FileText } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -95,6 +96,13 @@ const GroupStudents = () => {
             <p className="text-sm text-gray-500">Средний балл группы: {averageScore}</p>
           )}
         </div>
+        
+        <Link to={`/dashboard/disciplines/${disciplineId}/groups/${groupId}/characteristics`}>
+          <Button className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Характеристика группы
+          </Button>
+        </Link>
       </div>
 
       {loading ? (

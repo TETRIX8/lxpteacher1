@@ -295,6 +295,33 @@ export const disciplinesAPI = {
       console.error('Error fetching student scores:', error);
       throw error;
     }
+  },
+  
+  // New method for generating PDF characteristics (mock implementation)
+  generateGroupCharacteristicsPDF: async (data: any) => {
+    // In a real implementation, this would call a backend API to generate the PDF
+    // For now, we just simulate a PDF download
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Mock PDF data - in a real implementation, the API would return PDF content
+      const mockPdfBlob = new Blob(['Mock PDF content'], {type: 'application/pdf'});
+      
+      // Create download link
+      const url = URL.createObjectURL(mockPdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'group-characteristics.pdf';
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
+    }
   }
 };
 

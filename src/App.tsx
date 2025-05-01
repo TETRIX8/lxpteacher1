@@ -14,6 +14,7 @@ import Dashboard from "./pages/Dashboard";
 import Disciplines from "./pages/Disciplines";
 import DisciplineGroups from "./pages/DisciplineGroups";
 import GroupStudents from "./pages/GroupStudents";
+import GroupCharacteristics from "./pages/GroupCharacteristics";
 import Groups from "./pages/Groups";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -47,6 +48,7 @@ const App = () => (
               <Route path="disciplines" element={<Disciplines />} />
               <Route path="disciplines/:disciplineId/groups" element={<DisciplineGroups />} />
               <Route path="disciplines/:disciplineId/groups/:groupId" element={<GroupStudents />} />
+              <Route path="disciplines/:disciplineId/groups/:groupId/characteristics" element={<GroupCharacteristics />} />
               <Route path="groups" element={<Groups />} />
               <Route path="settings" element={<Settings />} />
             </Route>
