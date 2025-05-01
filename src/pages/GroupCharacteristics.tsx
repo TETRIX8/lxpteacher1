@@ -185,7 +185,7 @@ const GroupCharacteristics = () => {
       } catch (error) {
         console.error('Error fetching student data', error);
         setError('Не удалось загрузить данные студентов');
-        toast.error('Не удалось загрузить данные студентов');
+        toast.error('Не удалось загр��зить данные студентов');
       } finally {
         setLoading(false);
       }
@@ -193,6 +193,14 @@ const GroupCharacteristics = () => {
 
     fetchData();
   }, [disciplineId, groupId, form]);
+
+  const handleAppendText = (studentIndex: number, text: string) => {
+    // Update the form with the new text value
+    form.setValue(`studentCharacteristics.${studentIndex}.comment`, text);
+    
+    // Reset the appending text state
+    setAppendingText({ studentIndex: -1, text: null });
+  };
 
   const handleKeywordToggle = (studentIndex: number, keywordId: string) => {
     const currentKeywords = form.getValues(`studentCharacteristics.${studentIndex}.keywords`) || [];
