@@ -18,8 +18,9 @@ interface Student {
     avatar?: string;
     student: {
       learningGroups: Array<{
-        enrolledAt: string;
-        expelledAt: string | null;
+        learningGroupId?: string;
+        enrolledAt?: string;
+        expelledAt?: string | null;
       }>;
     };
   };
@@ -126,7 +127,11 @@ const GroupStudents = () => {
                       const fullName = `${user.lastName || ''} ${user.firstName || ''} ${user.middleName || ''}`;
                       const isExpelled = studentData.learningGroups.some(group => group.expelledAt);
                       
-                      const groupInfo = studentData.learningGroups[0] || {};
+                      const groupInfo = studentData.learningGroups[0] || {
+                        enrolledAt: undefined,
+                        expelledAt: undefined
+                      };
+                      
                       const enrolledDate = groupInfo.enrolledAt 
                         ? DateTime.fromISO(groupInfo.enrolledAt).toFormat('dd.MM.yyyy') 
                         : "Н/Д";
