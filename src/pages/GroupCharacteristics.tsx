@@ -3,15 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
 import { FileText, Download } from 'lucide-react';
 import { disciplinesAPI } from '@/services/api';
-import { DateTime } from 'luxon';
 import { Badge } from '@/components/ui/badge';
 
 // Types
@@ -139,12 +136,16 @@ const GroupCharacteristics = () => {
   const generatePDF = async (data: FormValues) => {
     setGenerating(true);
     try {
-      // In a real implementation, this would generate a PDF using a library
-      // For now, we'll just simulate a delay and show a success message
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Call the API to generate and download PDF
+      await disciplinesAPI.generateGroupCharacteristicsPDF({
+        disciplineId,
+        groupId,
+        groupComment: data.groupComment,
+        studentCharacteristics: data.studentCharacteristics,
+        keywords: availableKeywords
+      });
       
-      toast.success('Характеристика успешно сгенерирована');
-      console.log('Generated PDF with data:', data);
+      toast.success('Характеристика успешно сгенерирована и скачана');
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Ошибка при создании характеристики');
@@ -285,8 +286,8 @@ const GroupCharacteristics = () => {
                   </>
                 ) : (
                   <>
-                    <FileText className="h-4 w-4" />
-                    Сгенерировать характеристику (PDF)
+                    <Download className="h-4 w-4" />
+                    Сгенерировать и скачать характеристику (PDF)
                   </>
                 )}
               </Button>

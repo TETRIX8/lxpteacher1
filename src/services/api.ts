@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 
 const API_URL = "https://api.newlxp.ru/graphql";
@@ -300,7 +299,6 @@ export const disciplinesAPI = {
   // New method for generating PDF characteristics (mock implementation)
   generateGroupCharacteristicsPDF: async (data: any) => {
     // In a real implementation, this would call a backend API to generate the PDF
-    // For now, we just simulate a PDF download
     
     try {
       // Simulate API call delay
