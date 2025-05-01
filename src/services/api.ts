@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 
 const API_URL = "https://api.newlxp.ru/graphql";
@@ -296,22 +297,25 @@ export const disciplinesAPI = {
     }
   },
   
-  // New method for generating PDF characteristics (mock implementation)
+  // Enhanced PDF generation implementation with full data
   generateGroupCharacteristicsPDF: async (data: any) => {
-    // In a real implementation, this would call a backend API to generate the PDF
+    console.log('Generating PDF with full data:', data);
     
     try {
       // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Mock PDF data - in a real implementation, the API would return PDF content
-      const mockPdfBlob = new Blob(['Mock PDF content'], {type: 'application/pdf'});
+      // Create a PDF document (in a real implementation, this would be server-side)
+      const pdfContent = generateMockPdfContent(data);
+      
+      // Convert to blob and trigger download
+      const mockPdfBlob = new Blob([pdfContent], {type: 'application/pdf'});
       
       // Create download link
       const url = URL.createObjectURL(mockPdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'group-characteristics.pdf';
+      link.download = `Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`;
       link.click();
       
       URL.revokeObjectURL(url);
@@ -322,5 +326,52 @@ export const disciplinesAPI = {
     }
   }
 };
+
+// Mock function to generate PDF content (in real implementation this would be server-side)
+function generateMockPdfContent(data: any) {
+  // In a real implementation, this would use a PDF library to generate a proper PDF
+  // For the purposes of this demo, we're creating a mock text representation
+  
+  let content = '';
+  
+  // Header
+  content += '==========================================\n';
+  content += '        ХАРАКТЕРИСТИКА ГРУППЫ\n';
+  content += '==========================================\n\n';
+  
+  // Group and discipline info
+  content += `Группа: ${data.groupName || 'Не указано'}\n`;
+  content += `Дисциплина: ${data.disciplineName || 'Не указано'}\n`;
+  content += `Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}\n`;
+  content += `Средний балл группы: ${data.averageScore || 'Не указано'}\n\n`;
+  
+  // Group comment
+  content += '==========================================\n';
+  content += 'ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ\n';
+  content += '==========================================\n';
+  content += data.groupComment || 'Не указана\n\n';
+  
+  // Students
+  content += '==========================================\n';
+  content += 'ХАРАКТЕРИСТИКИ СТУДЕНТОВ\n';
+  content += '==========================================\n\n';
+  
+  if (data.students && data.students.length > 0) {
+    data.students.forEach((student: any, index: number) => {
+      content += `${index + 1}. ${student.fullName}\n`;
+      content += `   - Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})\n`;
+      content += '   - Характеристики: ' + (student.keywords.length ? student.keywords.join(', ') : 'не указаны') + '\n';
+      content += '   - Индивидуальный комментарий: ' + (student.comment || 'не указан') + '\n\n';
+    });
+  } else {
+    content += 'Информация о студентах отсутствует\n';
+  }
+  
+  content += '==========================================\n';
+  content += '      Документ сгенерирован системой      \n';
+  content += '==========================================\n';
+  
+  return content;
+}
 
 export default api;

@@ -74,6 +74,9 @@ const GroupCharacteristics = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [disciplineName, setDisciplineName] = useState<string>('');
+  const [groupName, setGroupName] = useState<string>('');
+  const [averageScore, setAverageScore] = useState<number | null>(null);
   
   // Initialize form
   const form = useForm<FormValues>({
@@ -98,6 +101,12 @@ const GroupCharacteristics = () => {
         const scoreGroups = await disciplinesAPI.getStudentScores(disciplineId, groupId);
         if (scoreGroups && scoreGroups.length > 0) {
           setScores(scoreGroups[0].students || []);
+          setAverageScore(scoreGroups[0].averageScore);
+          
+          // Set discipline name
+          if (scoreGroups[0].discipline && scoreGroups[0].discipline.name) {
+            setDisciplineName(scoreGroups[0].discipline.name);
+          }
           
           // Initialize form values with student IDs
           const initialCharacteristics = studentData.map(student => ({
@@ -110,6 +119,13 @@ const GroupCharacteristics = () => {
             studentCharacteristics: initialCharacteristics,
             groupComment: ''
           });
+        }
+
+        // Get group name
+        const groupsData = await disciplinesAPI.getLearningGroups(disciplineId);
+        const currentGroup = groupsData.find(g => g.id === groupId);
+        if (currentGroup) {
+          setGroupName(currentGroup.name);
         }
       } catch (error) {
         console.error('Error fetching student data', error);
@@ -136,13 +152,44 @@ const GroupCharacteristics = () => {
   const generatePDF = async (data: FormValues) => {
     setGenerating(true);
     try {
-      // Call the API to generate and download PDF
+      // Prepare comprehensive data for PDF generation
+      const studentsWithDetails = students.map((student, index) => {
+        const studentScore = scores.find(score => score.student.user.id === student.user.id);
+        const studentCharacteristic = data.studentCharacteristics.find(char => char.studentId === student.user.id);
+        
+        const fullName = `${student.user.lastName || ''} ${student.user.firstName || ''} ${student.user.middleName || ''}`;
+        const mainScore = studentScore ? studentScore.scoreForAnsweredTasks || 0 : 0;
+        const retakeScore = studentScore ? studentScore.scoreForAnsweredRetakeTasks || 0 : 0;
+        const totalScore = mainScore + retakeScore;
+        
+        const selectedKeywords = studentCharacteristic?.keywords.map(id => {
+          const keyword = availableKeywords.find(k => k.id === id);
+          return keyword ? keyword.text : '';
+        }) || [];
+        
+        return {
+          id: student.user.id,
+          fullName,
+          mainScore,
+          retakeScore,
+          totalScore,
+          keywords: selectedKeywords,
+          comment: studentCharacteristic?.comment || '',
+        };
+      });
+      
+      // Call the API to generate and download PDF with all data
       await disciplinesAPI.generateGroupCharacteristicsPDF({
         disciplineId,
         groupId,
+        disciplineName,
+        groupName,
+        averageScore,
         groupComment: data.groupComment,
+        students: studentsWithDetails,
         studentCharacteristics: data.studentCharacteristics,
-        keywords: availableKeywords
+        keywords: availableKeywords,
+        date: new Date().toLocaleDateString('ru-RU')
       });
       
       toast.success('Характеристика успешно сгенерирована и скачана');
@@ -165,7 +212,9 @@ const GroupCharacteristics = () => {
           <Link to={`/dashboard/disciplines/${disciplineId}/groups/${groupId}`}>
             <Button variant="outline" size="sm" className="mb-2">&larr; Назад к студентам</Button>
           </Link>
-          <h1 className="text-2xl font-bold tracking-tight">Характеристика группы</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Характеристика группы {groupName}</h1>
+          {disciplineName && <p className="text-gray-600">Дисциплина: {disciplineName}</p>}
+          {averageScore !== null && <p className="text-gray-600">Средний балл: {averageScore}</p>}
         </div>
       </div>
 
