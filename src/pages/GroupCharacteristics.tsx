@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Eye } from 'lucide-react';
 import { disciplinesAPI } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
+import { useMediaQuery } from '@/hooks/use-mobile';
 
 // Types
 interface Student {
@@ -77,6 +86,10 @@ const GroupCharacteristics = () => {
   const [disciplineName, setDisciplineName] = useState<string>('');
   const [groupName, setGroupName] = useState<string>('');
   const [averageScore, setAverageScore] = useState<number | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string>('');
+  
+  const isMobile = useMediaQuery("(max-width: 640px)");
   
   // Initialize form
   const form = useForm<FormValues>({
@@ -149,48 +162,98 @@ const GroupCharacteristics = () => {
     form.setValue(`studentCharacteristics.${studentIndex}.keywords`, updatedKeywords);
   };
 
+  const preparePreviewData = (data: FormValues) => {
+    const studentsWithDetails = students.map((student) => {
+      const studentScore = scores.find(score => score.student.user.id === student.user.id);
+      const studentCharacteristic = data.studentCharacteristics.find(char => char.studentId === student.user.id);
+      
+      const fullName = `${student.user.lastName || ''} ${student.user.firstName || ''} ${student.user.middleName || ''}`;
+      const mainScore = studentScore ? studentScore.scoreForAnsweredTasks || 0 : 0;
+      const retakeScore = studentScore ? studentScore.scoreForAnsweredRetakeTasks || 0 : 0;
+      const totalScore = mainScore + retakeScore;
+      
+      const selectedKeywords = studentCharacteristic?.keywords.map(id => {
+        const keyword = availableKeywords.find(k => k.id === id);
+        return keyword ? keyword.text : '';
+      }) || [];
+      
+      return {
+        id: student.user.id,
+        fullName,
+        mainScore,
+        retakeScore,
+        totalScore,
+        keywords: selectedKeywords,
+        comment: studentCharacteristic?.comment || '',
+      };
+    });
+    
+    return {
+      disciplineId,
+      groupId,
+      disciplineName,
+      groupName,
+      averageScore,
+      groupComment: data.groupComment,
+      students: studentsWithDetails,
+      studentCharacteristics: data.studentCharacteristics,
+      keywords: availableKeywords,
+      date: new Date().toLocaleDateString('ru-RU')
+    };
+  };
+
+  const handlePreview = () => {
+    const formData = form.getValues();
+    const previewData = preparePreviewData(formData);
+    
+    // Generate preview content
+    let content = '';
+    
+    // Header
+    content += '==========================================\n';
+    content += '        ХАРАКТЕРИСТИКА ГРУППЫ\n';
+    content += '==========================================\n\n';
+    
+    // Group and discipline info
+    content += `Группа: ${previewData.groupName || 'Не указано'}\n`;
+    content += `Дисциплина: ${previewData.disciplineName || 'Не указано'}\n`;
+    content += `Дата: ${previewData.date || new Date().toLocaleDateString('ru-RU')}\n`;
+    content += `Средний балл группы: ${previewData.averageScore || 'Не указано'}\n\n`;
+    
+    // Group comment
+    content += '==========================================\n';
+    content += 'ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ\n';
+    content += '==========================================\n';
+    content += previewData.groupComment || 'Не указана\n\n';
+    
+    // Students
+    content += '==========================================\n';
+    content += 'ХАРАКТЕРИСТИКИ СТУДЕНТОВ\n';
+    content += '==========================================\n\n';
+    
+    if (previewData.students && previewData.students.length > 0) {
+      previewData.students.forEach((student, index) => {
+        content += `${index + 1}. ${student.fullName}\n`;
+        content += `   - Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})\n`;
+        content += '   - Характеристики: ' + (student.keywords.length ? student.keywords.join(', ') : 'не указаны') + '\n';
+        content += '   - Индивидуальный комментарий: ' + (student.comment || 'не указан') + '\n\n';
+      });
+    } else {
+      content += 'Информация о студентах отсутствует\n';
+    }
+    
+    setPreviewContent(content);
+    setIsPreviewOpen(true);
+  };
+
   const generatePDF = async (data: FormValues) => {
     setGenerating(true);
     try {
-      // Prepare comprehensive data for PDF generation
-      const studentsWithDetails = students.map((student, index) => {
-        const studentScore = scores.find(score => score.student.user.id === student.user.id);
-        const studentCharacteristic = data.studentCharacteristics.find(char => char.studentId === student.user.id);
-        
-        const fullName = `${student.user.lastName || ''} ${student.user.firstName || ''} ${student.user.middleName || ''}`;
-        const mainScore = studentScore ? studentScore.scoreForAnsweredTasks || 0 : 0;
-        const retakeScore = studentScore ? studentScore.scoreForAnsweredRetakeTasks || 0 : 0;
-        const totalScore = mainScore + retakeScore;
-        
-        const selectedKeywords = studentCharacteristic?.keywords.map(id => {
-          const keyword = availableKeywords.find(k => k.id === id);
-          return keyword ? keyword.text : '';
-        }) || [];
-        
-        return {
-          id: student.user.id,
-          fullName,
-          mainScore,
-          retakeScore,
-          totalScore,
-          keywords: selectedKeywords,
-          comment: studentCharacteristic?.comment || '',
-        };
-      });
+      // Prepare comprehensive data for PDF generation using the same function
+      const pdfData = preparePreviewData(data);
       
       // Call the API to generate and download PDF with all data
-      await disciplinesAPI.generateGroupCharacteristicsPDF({
-        disciplineId,
-        groupId,
-        disciplineName,
-        groupName,
-        averageScore,
-        groupComment: data.groupComment,
-        students: studentsWithDetails,
-        studentCharacteristics: data.studentCharacteristics,
-        keywords: availableKeywords,
-        date: new Date().toLocaleDateString('ru-RU')
-      });
+      await disciplinesAPI.generateGroupCharacteristicsPDF(pdfData);
       
       toast.success('Характеристика успешно сгенерирована и скачана');
     } catch (error) {
@@ -203,6 +266,15 @@ const GroupCharacteristics = () => {
 
   const getKeywordById = (id: string) => {
     return availableKeywords.find(keyword => keyword.id === id) || null;
+  };
+
+  // Component for preview content
+  const CharacteristicPreview = ({content}: {content: string}) => {
+    return (
+      <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded-md border max-h-[60vh] overflow-y-auto">
+        {content}
+      </div>
+    );
   };
 
   return (
@@ -322,7 +394,16 @@ const GroupCharacteristics = () => {
               </div>
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex justify-end gap-3">
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={() => handlePreview()}
+                className="flex items-center gap-2"
+              >
+                <Eye className="h-4 w-4" />
+                Предпросмотр
+              </Button>
               <Button 
                 type="submit" 
                 disabled={generating}
@@ -336,13 +417,45 @@ const GroupCharacteristics = () => {
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Сгенерировать и скачать характеристику (PDF)
+                    Сгенерировать и скачать (PDF)
                   </>
                 )}
               </Button>
             </div>
           </form>
         </Form>
+      )}
+
+      {/* Responsive Preview - Dialog for desktop and Drawer for mobile */}
+      {isMobile ? (
+        <Drawer open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DrawerContent>
+            <DrawerHeader>
+              <DrawerTitle>Предпросмотр характеристики</DrawerTitle>
+            </DrawerHeader>
+            <div className="px-4">
+              <CharacteristicPreview content={previewContent} />
+            </div>
+            <DrawerFooter>
+              <Button onClick={() => setIsPreviewOpen(false)}>Закрыть</Button>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
+      ) : (
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="sm:max-w-[800px]">
+            <DialogHeader>
+              <DialogTitle>Предпросмотр характеристики</DialogTitle>
+              <DialogDescription>
+                Проверьте содержание перед скачиванием PDF документа
+              </DialogDescription>
+            </DialogHeader>
+            <CharacteristicPreview content={previewContent} />
+            <DialogFooter>
+              <Button onClick={() => setIsPreviewOpen(false)}>Закрыть</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
