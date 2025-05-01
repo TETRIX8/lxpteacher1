@@ -315,7 +315,7 @@ export const disciplinesAPI = {
       const url = URL.createObjectURL(mockPdfBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`;
+      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`;
       link.click();
       
       URL.revokeObjectURL(url);
@@ -334,16 +334,22 @@ function generateMockPdfContent(data: any) {
   
   let content = '';
   
-  // Header
+  // Header with A-K Project branding
   content += '==========================================\n';
-  content += '        ХАРАКТЕРИСТИКА ГРУППЫ\n';
+  content += '        A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ\n';
   content += '==========================================\n\n';
   
   // Group and discipline info
   content += `Группа: ${data.groupName || 'Не указано'}\n`;
   content += `Дисциплина: ${data.disciplineName || 'Не указано'}\n`;
   content += `Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}\n`;
-  content += `Средний балл группы: ${data.averageScore || 'Не указано'}\n\n`;
+  
+  // Only show average score if it's available
+  if (data.averageScore !== null && data.averageScore !== undefined) {
+    content += `Средний балл группы: ${data.averageScore}\n`;
+  }
+  
+  content += '\n';
   
   // Group comment
   content += '==========================================\n';
@@ -367,8 +373,9 @@ function generateMockPdfContent(data: any) {
     content += 'Информация о студентах отсутствует\n';
   }
   
+  // Footer with A-K Project branding
   content += '==========================================\n';
-  content += '      Документ сгенерирован системой      \n';
+  content += '      A-K Project - Документ сгенерирован системой      \n';
   content += '==========================================\n';
   
   return content;

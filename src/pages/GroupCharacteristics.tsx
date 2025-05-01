@@ -185,7 +185,7 @@ const GroupCharacteristics = () => {
       } catch (error) {
         console.error('Error fetching student data', error);
         setError('Не удалось загрузить данные студентов');
-        toast.error('Не удалось загр��зить данные студентов');
+        toast.error('Не удалось загрузить данные студентов');
       } finally {
         setLoading(false);
       }
@@ -265,16 +265,22 @@ const GroupCharacteristics = () => {
     // Generate preview content
     let content = '';
     
-    // Header
+    // Header with A-K Project branding
     content += '==========================================\n';
-    content += '        ХАРАКТЕРИСТИКА ГРУППЫ\n';
+    content += '        A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ\n';
     content += '==========================================\n\n';
     
     // Group and discipline info
     content += `Группа: ${previewData.groupName || 'Не указано'}\n`;
     content += `Дисциплина: ${previewData.disciplineName || 'Не указано'}\n`;
     content += `Дата: ${previewData.date || new Date().toLocaleDateString('ru-RU')}\n`;
-    content += `Средний балл группы: ${previewData.averageScore || 'Не указано'}\n\n`;
+    
+    // Only show average score if it's available
+    if (previewData.averageScore !== null && previewData.averageScore !== undefined) {
+      content += `Средний балл группы: ${previewData.averageScore}\n`;
+    }
+    
+    content += '\n';
     
     // Group comment
     content += '==========================================\n';
@@ -297,6 +303,11 @@ const GroupCharacteristics = () => {
     } else {
       content += 'Информация о студентах отсутствует\n';
     }
+    
+    // Footer with A-K Project branding
+    content += '==========================================\n';
+    content += '      A-K Project - Документ сгенерирован системой      \n';
+    content += '==========================================\n';
     
     setPreviewContent(content);
     setIsPreviewOpen(true);
@@ -329,11 +340,24 @@ const GroupCharacteristics = () => {
     ? availableKeywords
     : availableKeywords.filter(keyword => keyword.category === keywordCategory);
 
-  // Component for preview content
+  // Component for preview content with styled A-K Project text
   const CharacteristicPreview = ({content}: {content: string}) => {
+    // Replace A-K Project text with styled version
+    const styledContent = content.replace(
+      /A-K Project/g, 
+      'A-K Project'
+    );
+    
     return (
       <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-4 rounded-md border max-h-[60vh] overflow-y-auto">
-        {content}
+        <div className="mb-4">
+          <div className="text-center font-bold">
+            <span className="bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent">
+              A-K Project
+            </span> - Система характеристик
+          </div>
+        </div>
+        {styledContent.replace(/A-K Project/g, '')}
       </div>
     );
   };
