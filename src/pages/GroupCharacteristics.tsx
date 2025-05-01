@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -114,6 +113,7 @@ const GroupCharacteristics = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<string>('');
   const [keywordCategory, setKeywordCategory] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all');
+  const [appendingText, setAppendingText] = useState<{ studentIndex: number; text: string | null }>({ studentIndex: -1, text: null });
   
   const isMobile = useIsMobile();
   
@@ -202,6 +202,12 @@ const GroupCharacteristics = () => {
       : [...currentKeywords, keywordId];
     
     form.setValue(`studentCharacteristics.${studentIndex}.keywords`, updatedKeywords);
+    
+    // Get the keyword text to append to comment
+    const keyword = getKeywordById(keywordId);
+    if (keyword) {
+      setAppendingText({ studentIndex, text: keyword.text });
+    }
   };
 
   const preparePreviewData = (data: FormValues) => {
@@ -498,6 +504,8 @@ const GroupCharacteristics = () => {
                                 <Textarea 
                                   placeholder="Добавьте индивидуальную характеристику..." 
                                   className="resize-vertical focus:ring-2 focus:ring-edu-primary/30 transition-all"
+                                  appendText={appendingText.studentIndex === index ? appendingText.text || undefined : undefined}
+                                  onAppendText={(text) => handleAppendText(index, text)}
                                   {...field} 
                                 />
                               </FormControl>
