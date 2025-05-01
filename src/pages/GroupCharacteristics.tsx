@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
-import { FileText, Download, Eye } from 'lucide-react';
+import { FileText, Download, Eye, Sparkles, Loader2 } from 'lucide-react';
 import { disciplinesAPI } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
+import { aiService } from '@/services/aiService';
 import { 
   Dialog, 
   DialogContent, 
@@ -114,6 +116,8 @@ const GroupCharacteristics = () => {
   const [previewContent, setPreviewContent] = useState<string>('');
   const [keywordCategory, setKeywordCategory] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all');
   const [appendingText, setAppendingText] = useState<{ studentIndex: number; text: string | null }>({ studentIndex: -1, text: null });
+  const [enhancingStudentIndex, setEnhancingStudentIndex] = useState<number | null>(null);
+  const [enhancingGroup, setEnhancingGroup] = useState(false);
   
   const isMobile = useIsMobile();
   
@@ -340,6 +344,98 @@ const GroupCharacteristics = () => {
     ? availableKeywords
     : availableKeywords.filter(keyword => keyword.category === keywordCategory);
 
+  // AI enhancement functions
+  const enhanceStudentComment = async (studentIndex: number) => {
+    setEnhancingStudentIndex(studentIndex);
+    
+    const currentComment = form.getValues(`studentCharacteristics.${studentIndex}.comment`);
+    
+    if (!currentComment || currentComment.trim() === '') {
+      toast.error('Нечего улучшать. Добавьте текст характеристики сначала.');
+      setEnhancingStudentIndex(null);
+      return;
+    }
+    
+    try {
+      const result = await aiService.enhanceStudentCharacteristic(currentComment);
+      
+      if (result.success) {
+        form.setValue(`studentCharacteristics.${studentIndex}.comment`, result.enhancedText);
+        toast.success('Характеристика улучшена с помощью ИИ');
+      } else {
+        toast.error(result.error || 'Не удалось улучшить характеристику');
+      }
+    } catch (error) {
+      console.error('Error enhancing comment:', error);
+      toast.error('Ошибка при улучшении характеристики');
+    } finally {
+      setEnhancingStudentIndex(null);
+    }
+  };
+
+  const enhanceGroupComment = async () => {
+    setEnhancingGroup(true);
+    
+    const currentComment = form.getValues('groupComment');
+    
+    if (!currentComment || currentComment.trim() === '') {
+      toast.error('Нечего улучшать. Добавьте текст характеристики сначала.');
+      setEnhancingGroup(false);
+      return;
+    }
+    
+    try {
+      const result = await aiService.enhanceGroupCharacteristic(currentComment);
+      
+      if (result.success) {
+        form.setValue('groupComment', result.enhancedText);
+        toast.success('Характеристика группы улучшена с помощью ИИ');
+      } else {
+        toast.error(result.error || 'Не удалось улучшить характеристику');
+      }
+    } catch (error) {
+      console.error('Error enhancing group comment:', error);
+      toast.error('Ошибка при улучшении характеристики группы');
+    } finally {
+      setEnhancingGroup(false);
+    }
+  };
+
+  // AI Enhancement for Preview
+  const enhanceAllInPreview = async () => {
+    // Show loading state
+    toast.info('Улучшение всех характеристик с помощью ИИ...');
+    
+    try {
+      // Enhance group comment first
+      const groupComment = form.getValues('groupComment');
+      if (groupComment && groupComment.trim() !== '') {
+        const groupResult = await aiService.enhanceGroupCharacteristic(groupComment);
+        if (groupResult.success) {
+          form.setValue('groupComment', groupResult.enhancedText);
+        }
+      }
+      
+      // Enhance all student comments one by one
+      const studentCharacteristics = form.getValues('studentCharacteristics');
+      
+      for (let i = 0; i < studentCharacteristics.length; i++) {
+        const comment = studentCharacteristics[i].comment;
+        if (comment && comment.trim() !== '') {
+          const result = await aiService.enhanceStudentCharacteristic(comment);
+          if (result.success) {
+            form.setValue(`studentCharacteristics.${i}.comment`, result.enhancedText);
+          }
+        }
+      }
+      
+      toast.success('Все характеристики успешно улучшены с помощью ИИ');
+    } catch (error) {
+      console.error('Error enhancing all comments:', error);
+      toast.error('Произошла ошибка при улучшении характеристик');
+    }
+  };
+
   // Component for preview content with styled A-K Project text
   const CharacteristicPreview = ({content}: {content: string}) => {
     // Replace A-K Project text with styled version
@@ -388,11 +484,33 @@ const GroupCharacteristics = () => {
           <form onSubmit={form.handleSubmit(generatePDF)} className="space-y-8">
             <div className="space-y-6">
               <Card className="animate-fade-in">
-                <CardHeader>
-                  <CardTitle>Комментарий для всей группы</CardTitle>
-                  <CardDescription>
-                    Добавьте общую характеристику для всей группы
-                  </CardDescription>
+                <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <CardTitle>Комментарий для всей группы</CardTitle>
+                    <CardDescription>
+                      Добавьте общую характеристику для всей группы
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={enhanceGroupComment}
+                    className="mt-2 md:mt-0 flex items-center gap-2"
+                    disabled={enhancingGroup}
+                  >
+                    {enhancingGroup ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Улучшаем...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Улучшить с помощью ИИ
+                      </>
+                    )}
+                  </Button>
                 </CardHeader>
                 <CardContent>
                   <FormField
@@ -464,13 +582,34 @@ const GroupCharacteristics = () => {
                   
                   return (
                     <Card key={student.user.id} className="border-l-4 border-l-edu-primary animate-fade-in hover:shadow-md transition-shadow">
-                      <CardHeader>
+                      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
                         <div className="flex justify-between items-center">
                           <CardTitle className="text-lg">{fullName}</CardTitle>
                           <Badge variant="outline" className="ml-2">
                             Баллы: {totalScore}
                           </Badge>
                         </div>
+                        
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => enhanceStudentComment(index)}
+                          className="mt-2 md:mt-0 flex items-center gap-2"
+                          disabled={enhancingStudentIndex === index}
+                        >
+                          {enhancingStudentIndex === index ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Улучшаем...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              Улучшить с помощью ИИ
+                            </>
+                          )}
+                        </Button>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div>
@@ -551,7 +690,7 @@ const GroupCharacteristics = () => {
               </div>
             </div>
             
-            <div className="flex justify-end gap-3">
+            <div className="flex flex-wrap justify-end gap-3">
               <Button 
                 type="button" 
                 variant="outline"
@@ -587,8 +726,17 @@ const GroupCharacteristics = () => {
       {isMobile ? (
         <Drawer open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
           <DrawerContent className="animate-slide-in-right">
-            <DrawerHeader>
+            <DrawerHeader className="flex justify-between items-center">
               <DrawerTitle>Предпросмотр характеристики</DrawerTitle>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={enhanceAllInPreview}
+              >
+                <Sparkles className="h-4 w-4" />
+                Улучшить все
+              </Button>
             </DrawerHeader>
             <div className="px-4">
               <CharacteristicPreview content={previewContent} />
@@ -601,11 +749,22 @@ const GroupCharacteristics = () => {
       ) : (
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
           <DialogContent className="sm:max-w-[800px] animate-scale-in">
-            <DialogHeader>
-              <DialogTitle>Предпросмотр характеристики</DialogTitle>
-              <DialogDescription>
-                Проверьте содержание перед скачиванием PDF документа
-              </DialogDescription>
+            <DialogHeader className="flex flex-col md:flex-row md:justify-between md:items-center">
+              <div>
+                <DialogTitle>Предпросмотр характеристики</DialogTitle>
+                <DialogDescription>
+                  Проверьте содержание перед скачиванием PDF документа
+                </DialogDescription>
+              </div>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="mt-2 md:mt-0 flex items-center gap-2"
+                onClick={enhanceAllInPreview}
+              >
+                <Sparkles className="h-4 w-4" />
+                Улучшить все с помощью ИИ
+              </Button>
             </DialogHeader>
             <CharacteristicPreview content={previewContent} />
             <DialogFooter>

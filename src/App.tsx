@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import DashboardLayout from "./layouts/DashboardLayout";
+import { useState, useEffect } from "react";
+import LoadingScreen from "./components/LoadingScreen";
 
 // Pages
 import Login from "./pages/Login";
@@ -21,45 +23,58 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            
-            {/* Redirect root to dashboard if authenticated */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+const App = () => {
+  const [loading, setLoading] = useState(true);
+  
+  const handleLoadingComplete = () => {
+    setLoading(false);
+  };
+  
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          
+          {loading && <LoadingScreen onLoadingComplete={handleLoadingComplete} />}
+          
+          {!loading && (
+            <BrowserRouter>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                
+                {/* Redirect root to dashboard if authenticated */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Protected Dashboard Routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<Dashboard />} />
-              <Route path="disciplines" element={<Disciplines />} />
-              <Route path="disciplines/:disciplineId/groups" element={<DisciplineGroups />} />
-              <Route path="disciplines/:disciplineId/groups/:groupId" element={<GroupStudents />} />
-              <Route path="disciplines/:disciplineId/groups/:groupId/characteristics" element={<GroupCharacteristics />} />
-              <Route path="groups" element={<Groups />} />
-              <Route path="settings" element={<Settings />} />
-            </Route>
+                {/* Protected Dashboard Routes */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <DashboardLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="disciplines" element={<Disciplines />} />
+                  <Route path="disciplines/:disciplineId/groups" element={<DisciplineGroups />} />
+                  <Route path="disciplines/:disciplineId/groups/:groupId" element={<GroupStudents />} />
+                  <Route path="disciplines/:disciplineId/groups/:groupId/characteristics" element={<GroupCharacteristics />} />
+                  <Route path="groups" element={<Groups />} />
+                  <Route path="settings" element={<Settings />} />
+                </Route>
 
-            {/* Catch-all route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+                {/* Catch-all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          )}
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
