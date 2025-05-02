@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
-import { FileText, Download, Eye, Sparkles, Loader2, FileSpreadsheet, FileWord } from 'lucide-react';
+import { FileText, Download, Eye, Sparkles, Loader2, FileSpreadsheet } from 'lucide-react';
 import { disciplinesAPI } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
 import { aiService } from '@/services/aiService';
@@ -759,7 +759,7 @@ const GroupCharacteristics = () => {
                     onClick={() => form.handleSubmit((data) => generateDocument(data, 'word'))()}
                     className="flex items-center gap-2 cursor-pointer"
                   >
-                    <FileWord className="h-4 w-4" />
+                    <FileText className="h-4 w-4" />
                     <span>Word документ</span>
                   </DropdownMenuItem>
                   
