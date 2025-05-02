@@ -11,11 +11,10 @@ export const aiService = {
   enhanceStudentCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
     const url = 'https://chatgpt-42.p.rapidapi.com/aitohuman';
     
-    // Create a prompt that guides the AI to enhance student characteristics
+    // Create a prompt that guides the AI to provide only the improved text without explanations
     const prompt = `Улучши эту характеристику студента, сделав её более профессиональной, 
-    информативной и конструктивной. Сохрани все упомянутые качества, но выражай их более 
-    академическим языком. Используй педагогическую терминологию, где уместно. 
-    Убедись, что результат звучит как профессиональная характеристика от преподавателя:
+    информативной и конструктивной. Используй педагогическую терминологию, где уместно. 
+    Дай только улучшенный текст без объяснений или вводных фраз. Никаких "вот улучшенная характеристика" или подобных фраз:
     
     ${originalText}`;
     
@@ -56,12 +55,10 @@ export const aiService = {
   enhanceGroupCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
     const url = 'https://chatgpt-42.p.rapidapi.com/aitohuman';
     
-    // Create a prompt specifically for group characteristics
+    // Create a prompt specifically for direct, concise group characteristics
     const prompt = `Улучши эту характеристику учебной группы, сделав её более профессиональной, 
-    информативной и конструктивной. Сохрани все упомянутые аспекты, но выражай их более 
-    академическим языком. Используй педагогическую терминологию для описания групповой динамики, 
-    успеваемости и особенностей группы. Результат должен звучать как профессиональная 
-    характеристика группы от преподавателя:
+    информативной и конструктивной. Используй педагогическую терминологию для описания групповой динамики. 
+    Дай только улучшенный текст без объяснений, вводных или заключительных фраз. Не добавляй комментариев от себя:
     
     ${originalText}`;
     
