@@ -297,7 +297,7 @@ export const disciplinesAPI = {
     }
   },
   
-  // Enhanced PDF generation implementation with full data
+  // PDF generation implementation
   generateGroupCharacteristicsPDF: async (data: any) => {
     console.log('Generating PDF with full data:', data);
     
@@ -306,7 +306,7 @@ export const disciplinesAPI = {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Create a PDF document (in a real implementation, this would be server-side)
-      const pdfContent = generateMockPdfContent(data);
+      const pdfContent = generateMockDocumentContent(data, 'pdf');
       
       // Convert to blob and trigger download
       const mockPdfBlob = new Blob([pdfContent], {type: 'application/pdf'});
@@ -324,25 +324,84 @@ export const disciplinesAPI = {
       console.error('Error generating PDF:', error);
       throw error;
     }
+  },
+  
+  // New Word document generation implementation
+  generateGroupCharacteristicsWord: async (data: any) => {
+    console.log('Generating Word document with full data:', data);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create a Word document content (in a real implementation, this would be server-side)
+      const wordContent = generateMockDocumentContent(data, 'word');
+      
+      // Convert to blob and trigger download
+      const mockWordBlob = new Blob([wordContent], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      
+      // Create download link
+      const url = URL.createObjectURL(mockWordBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.docx`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (error) {
+      console.error('Error generating Word document:', error);
+      throw error;
+    }
+  },
+  
+  // New Excel document generation implementation
+  generateGroupCharacteristicsExcel: async (data: any) => {
+    console.log('Generating Excel spreadsheet with full data:', data);
+    
+    try {
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Create Excel content (in a real implementation, this would be server-side)
+      const excelContent = generateMockDocumentContent(data, 'excel');
+      
+      // Convert to blob and trigger download
+      const mockExcelBlob = new Blob([excelContent], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      
+      // Create download link
+      const url = URL.createObjectURL(mockExcelBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.xlsx`;
+      link.click();
+      
+      URL.revokeObjectURL(url);
+      return true;
+    } catch (error) {
+      console.error('Error generating Excel spreadsheet:', error);
+      throw error;
+    }
   }
 };
 
-// Mock function to generate PDF content (in real implementation this would be server-side)
-function generateMockPdfContent(data: any) {
-  // In a real implementation, this would use a PDF library to generate a proper PDF
+// Mock function to generate document content (in real implementation this would be server-side)
+function generateMockDocumentContent(data: any, format: 'pdf' | 'word' | 'excel') {
+  // In a real implementation, this would use a proper library to generate the document
   // For the purposes of this demo, we're creating a mock text representation
   
   let content = '';
   
   // Header with A-K Project branding
   content += '==========================================\n';
-  content += '        A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ\n';
+  content += `        A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ (${format.toUpperCase()})\n`;
   content += '==========================================\n\n';
   
   // Group and discipline info
   content += `Группа: ${data.groupName || 'Не указано'}\n`;
   content += `Дисциплина: ${data.disciplineName || 'Не указано'}\n`;
   content += `Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}\n`;
+  content += `Формат: ${format.toUpperCase()}\n`;
   
   // Only show average score if it's available
   if (data.averageScore !== null && data.averageScore !== undefined) {
@@ -375,8 +434,15 @@ function generateMockPdfContent(data: any) {
   
   // Footer with A-K Project branding
   content += '==========================================\n';
-  content += '      A-K Project - Документ сгенерирован системой      \n';
+  content += `      A-K Project - Документ сгенерирован системой (${format.toUpperCase()})      \n`;
   content += '==========================================\n';
+  
+  // Add format-specific note
+  if (format === 'word') {
+    content += '\nДокумент сгенерирован в формате Microsoft Word\n';
+  } else if (format === 'excel') {
+    content += '\nДокумент сгенерирован в формате Microsoft Excel с таблицей данных\n';
+  }
   
   return content;
 }

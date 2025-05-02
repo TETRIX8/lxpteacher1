@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { toast } from '@/components/ui/sonner';
 import { useForm } from 'react-hook-form';
-import { FileText, Download, Eye, Sparkles, Loader2 } from 'lucide-react';
+import { FileText, Download, Eye, Sparkles, Loader2, FileSpreadsheet, FileWord } from 'lucide-react';
 import { disciplinesAPI } from '@/services/api';
 import { Badge } from '@/components/ui/badge';
 import { aiService } from '@/services/aiService';
@@ -21,6 +20,12 @@ import {
 } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Types
 interface Student {
@@ -102,6 +107,8 @@ interface FormValues {
   groupComment: string;
 }
 
+type DocumentFormat = 'pdf' | 'word' | 'excel';
+
 const GroupCharacteristics = () => {
   const { disciplineId, groupId } = useParams<{ disciplineId: string, groupId: string }>();
   const [students, setStudents] = useState<Student[]>([]);
@@ -118,6 +125,7 @@ const GroupCharacteristics = () => {
   const [appendingText, setAppendingText] = useState<{ studentIndex: number; text: string | null }>({ studentIndex: -1, text: null });
   const [enhancingStudentIndex, setEnhancingStudentIndex] = useState<number | null>(null);
   const [enhancingGroup, setEnhancingGroup] = useState(false);
+  const [generatingFormat, setGeneratingFormat] = useState<DocumentFormat | null>(null);
   
   const isMobile = useIsMobile();
   
@@ -317,21 +325,35 @@ const GroupCharacteristics = () => {
     setIsPreviewOpen(true);
   };
 
-  const generatePDF = async (data: FormValues) => {
+  const generateDocument = async (data: FormValues, format: DocumentFormat) => {
+    setGeneratingFormat(format);
     setGenerating(true);
+    
     try {
-      // Prepare comprehensive data for PDF generation using the same function
-      const pdfData = preparePreviewData(data);
+      // Prepare comprehensive data for document generation
+      const docData = preparePreviewData(data);
       
-      // Call the API to generate and download PDF with all data
-      await disciplinesAPI.generateGroupCharacteristicsPDF(pdfData);
-      
-      toast.success('Характеристика успешно сгенерирована и скачана');
+      // Call the API to generate and download the document with all data
+      switch (format) {
+        case 'pdf':
+          await disciplinesAPI.generateGroupCharacteristicsPDF(docData);
+          toast.success('PDF характеристика успешно сгенерирована и скачана');
+          break;
+        case 'word':
+          await disciplinesAPI.generateGroupCharacteristicsWord(docData);
+          toast.success('Word характеристика успешно сгенерирована и скачана');
+          break;
+        case 'excel':
+          await disciplinesAPI.generateGroupCharacteristicsExcel(docData);
+          toast.success('Excel характеристика успешно сгенерирована и скачана');
+          break;
+      }
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Ошибка при создании характеристики');
+      console.error(`Error generating ${format.toUpperCase()} document:`, error);
+      toast.error(`Ошибка при создании ${format.toUpperCase()} характеристики`);
     } finally {
       setGenerating(false);
+      setGeneratingFormat(null);
     }
   };
 
@@ -481,7 +503,7 @@ const GroupCharacteristics = () => {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(generatePDF)} className="space-y-8">
+          <form onSubmit={form.handleSubmit((data) => generateDocument(data, 'pdf'))} className="space-y-8">
             <div className="space-y-6">
               <Card className="animate-fade-in">
                 <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -700,23 +722,56 @@ const GroupCharacteristics = () => {
                 <Eye className="h-4 w-4" />
                 Предпросмотр
               </Button>
-              <Button 
-                type="submit" 
-                disabled={generating}
-                className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
-              >
-                {generating ? (
-                  <>
-                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                    Создание документа...
-                  </>
-                ) : (
-                  <>
-                    <Download className="h-4 w-4" />
-                    Сгенерировать и скачать (PDF)
-                  </>
-                )}
-              </Button>
+              
+              {/* Replace single button with dropdown menu */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    disabled={generating}
+                    className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
+                  >
+                    {generating ? (
+                      <>
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        {generatingFormat === 'pdf' && 'Создание PDF...'}
+                        {generatingFormat === 'word' && 'Создание Word...'}
+                        {generatingFormat === 'excel' && 'Создание Excel...'}
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4" />
+                        Сгенерировать и скачать
+                      </>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'pdf'))()}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span>PDF документ</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'word'))()}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileWord className="h-4 w-4" />
+                    <span>Word документ</span>
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem 
+                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'excel'))()}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    <span>Excel таблица</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </form>
         </Form>
@@ -753,7 +808,7 @@ const GroupCharacteristics = () => {
               <div>
                 <DialogTitle>Предпросмотр характеристики</DialogTitle>
                 <DialogDescription>
-                  Проверьте содержание перед скачиванием PDF документа
+                  Проверьте содержание перед скачиванием документа
                 </DialogDescription>
               </div>
               <Button 
