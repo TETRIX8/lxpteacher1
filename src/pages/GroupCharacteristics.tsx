@@ -66,34 +66,78 @@ interface CharacteristicKeyword {
   id: string;
   text: string;
   color: string;
-  category: 'positive' | 'neutral' | 'negative';
+  category: 'positive' | 'neutral' | 'negative' | 'academic' | 'social' | 'effort';
 }
 
-// Available keyword options - expanded with more options including negative ones
+// Expanded keyword options with more detailed categories
 const availableKeywords: CharacteristicKeyword[] = [
-  // Positive characteristics
-  { id: '1', text: 'Хорошо учится', color: 'bg-green-100', category: 'positive' },
-  { id: '2', text: 'Активный на занятиях', color: 'bg-blue-100', category: 'positive' },
-  { id: '3', text: 'Творческий подход', color: 'bg-purple-100', category: 'positive' },
-  { id: '4', text: 'Лидерские качества', color: 'bg-yellow-100', category: 'positive' },
-  { id: '6', text: 'Способный к аналитике', color: 'bg-indigo-100', category: 'positive' },
-  { id: '7', text: 'Ответственный', color: 'bg-teal-100', category: 'positive' },
-  { id: '8', text: 'Организованный', color: 'bg-cyan-100', category: 'positive' },
-  { id: '9', text: 'Быстро обучается', color: 'bg-green-100', category: 'positive' },
-  { id: '10', text: 'Внимателен к деталям', color: 'bg-blue-100', category: 'positive' },
+  // Academic Performance (knowledge and cognitive abilities)
+  { id: '1', text: 'Отличная успеваемость', color: 'bg-green-100', category: 'academic' },
+  { id: '2', text: 'Хорошая успеваемость', color: 'bg-green-100', category: 'academic' },
+  { id: '3', text: 'Средняя успеваемость', color: 'bg-gray-100', category: 'academic' },
+  { id: '4', text: 'Низкая успеваемость', color: 'bg-red-100', category: 'academic' },
+  { id: '5', text: 'Аналитическое мышление', color: 'bg-blue-100', category: 'academic' },
+  { id: '6', text: 'Творческий подход', color: 'bg-purple-100', category: 'academic' },
+  { id: '7', text: 'Глубокое понимание материала', color: 'bg-green-100', category: 'academic' },
+  { id: '8', text: 'Трудности с пониманием', color: 'bg-orange-100', category: 'academic' },
+  { id: '9', text: 'Быстро обучается', color: 'bg-green-100', category: 'academic' },
+  { id: '10', text: 'Медленно осваивает материал', color: 'bg-orange-100', category: 'academic' },
   
-  // Neutral characteristics
-  { id: '11', text: 'Средняя успеваемость', color: 'bg-gray-100', category: 'neutral' },
-  { id: '12', text: 'Работает в команде', color: 'bg-blue-50', category: 'neutral' },
-  { id: '13', text: 'Следует инструкциям', color: 'bg-gray-100', category: 'neutral' },
+  // Effort and Work Ethic
+  { id: '11', text: 'Трудолюбивый', color: 'bg-green-100', category: 'effort' },
+  { id: '12', text: 'Ответственный', color: 'bg-green-100', category: 'effort' },
+  { id: '13', text: 'Дисциплинированный', color: 'bg-green-100', category: 'effort' },
+  { id: '14', text: 'Организованный', color: 'bg-blue-100', category: 'effort' },
+  { id: '15', text: 'Пунктуальный', color: 'bg-blue-100', category: 'effort' },
+  { id: '16', text: 'Старательный', color: 'bg-blue-100', category: 'effort' },
+  { id: '17', text: 'Внимателен к деталям', color: 'bg-blue-100', category: 'effort' },
+  { id: '18', text: 'Недисциплинированный', color: 'bg-red-100', category: 'effort' },
+  { id: '19', text: 'Требует постоянного контроля', color: 'bg-orange-100', category: 'effort' },
+  { id: '20', text: 'Неорганизованный', color: 'bg-red-100', category: 'effort' },
   
-  // Negative characteristics
-  { id: '5', text: 'Требуется внимание', color: 'bg-red-100', category: 'negative' },
-  { id: '14', text: 'Часто пропускает занятия', color: 'bg-red-100', category: 'negative' },
-  { id: '15', text: 'Низкая дисциплина', color: 'bg-red-100', category: 'negative' },
-  { id: '16', text: 'Трудности с заданиями', color: 'bg-orange-100', category: 'negative' },
-  { id: '17', text: 'Не выполняет домашние задания', color: 'bg-red-100', category: 'negative' },
-  { id: '18', text: 'Пассивен на занятиях', color: 'bg-orange-100', category: 'negative' },
+  // Classroom Behavior
+  { id: '21', text: 'Активный на занятиях', color: 'bg-green-100', category: 'positive' },
+  { id: '22', text: 'Участвует в дискуссиях', color: 'bg-green-100', category: 'positive' },
+  { id: '23', text: 'Задает вопросы', color: 'bg-blue-100', category: 'positive' },
+  { id: '24', text: 'Пассивен на занятиях', color: 'bg-orange-100', category: 'negative' },
+  { id: '25', text: 'Дезорганизует занятия', color: 'bg-red-100', category: 'negative' },
+  { id: '26', text: 'Часто опаздывает', color: 'bg-red-100', category: 'negative' },
+  { id: '27', text: 'Часто отсутствует', color: 'bg-red-100', category: 'negative' },
+  { id: '28', text: 'Невнимателен на занятиях', color: 'bg-orange-100', category: 'negative' },
+  
+  // Social Skills and Leadership
+  { id: '29', text: 'Лидерские качества', color: 'bg-yellow-100', category: 'social' },
+  { id: '30', text: 'Хорошо работает в команде', color: 'bg-green-100', category: 'social' },
+  { id: '31', text: 'Помогает другим', color: 'bg-green-100', category: 'social' },
+  { id: '32', text: 'Коммуникабельный', color: 'bg-green-100', category: 'social' },
+  { id: '33', text: 'Уважителен к преподавателям', color: 'bg-green-100', category: 'social' },
+  { id: '34', text: 'Уважителен к сокурсникам', color: 'bg-green-100', category: 'social' },
+  { id: '35', text: 'Трудности в общении', color: 'bg-orange-100', category: 'social' },
+  { id: '36', text: 'Конфликтный', color: 'bg-red-100', category: 'social' },
+  { id: '37', text: 'Замкнутый', color: 'bg-orange-100', category: 'social' },
+  
+  // Positive Qualities
+  { id: '38', text: 'Инициативный', color: 'bg-green-100', category: 'positive' },
+  { id: '39', text: 'Самостоятельный', color: 'bg-green-100', category: 'positive' },
+  { id: '40', text: 'Мотивированный', color: 'bg-green-100', category: 'positive' },
+  { id: '41', text: 'Целеустремленный', color: 'bg-green-100', category: 'positive' },
+  { id: '42', text: 'Креативный', color: 'bg-purple-100', category: 'positive' },
+  { id: '43', text: 'Любознательный', color: 'bg-blue-100', category: 'positive' },
+  
+  // Neutral Characteristics
+  { id: '44', text: 'Спокойный', color: 'bg-gray-100', category: 'neutral' },
+  { id: '45', text: 'Следует инструкциям', color: 'bg-gray-100', category: 'neutral' },
+  { id: '46', text: 'Исполнительный', color: 'bg-gray-100', category: 'neutral' },
+  { id: '47', text: 'Методичный', color: 'bg-gray-100', category: 'neutral' },
+  
+  // Areas for Improvement
+  { id: '48', text: 'Требуется дополнительная помощь', color: 'bg-orange-100', category: 'negative' },
+  { id: '49', text: 'Не выполняет домашние задания', color: 'bg-red-100', category: 'negative' },
+  { id: '50', text: 'Неуверенный', color: 'bg-orange-100', category: 'negative' },
+  { id: '51', text: 'Легко отвлекается', color: 'bg-orange-100', category: 'negative' },
+  { id: '52', text: 'Недостаточно старается', color: 'bg-orange-100', category: 'negative' },
+  { id: '53', text: 'Потенциал не раскрыт', color: 'bg-orange-100', category: 'negative' },
+  { id: '54', text: 'Испытывает трудности с заданиями', color: 'bg-orange-100', category: 'negative' },
 ];
 
 interface StudentCharacteristic {
@@ -119,7 +163,7 @@ const GroupCharacteristics = () => {
   const [averageScore, setAverageScore] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewContent, setPreviewContent] = useState<string>('');
-  const [keywordCategory, setKeywordCategory] = useState<'all' | 'positive' | 'neutral' | 'negative'>('all');
+  const [keywordCategory, setKeywordCategory] = useState<'all' | 'positive' | 'neutral' | 'negative' | 'academic' | 'social' | 'effort'>('all');
   const [appendingText, setAppendingText] = useState<{ studentIndex: number; text: string | null }>({ studentIndex: -1, text: null });
   const [enhancingStudentIndex, setEnhancingStudentIndex] = useState<number | null>(null);
   const [enhancingGroup, setEnhancingGroup] = useState(false);
@@ -549,6 +593,27 @@ const GroupCharacteristics = () => {
                       Все характеристики
                     </Badge>
                     <Badge 
+                      variant={keywordCategory === 'academic' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-blue-100 text-blue-800 hover:bg-blue-200"
+                      onClick={() => setKeywordCategory('academic')}
+                    >
+                      Академические
+                    </Badge>
+                    <Badge 
+                      variant={keywordCategory === 'effort' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                      onClick={() => setKeywordCategory('effort')}
+                    >
+                      Работоспособность
+                    </Badge>
+                    <Badge 
+                      variant={keywordCategory === 'social' ? "default" : "outline"} 
+                      className="cursor-pointer hover:scale-105 transition-transform bg-purple-100 text-purple-800 hover:bg-purple-200"
+                      onClick={() => setKeywordCategory('social')}
+                    >
+                      Социальные
+                    </Badge>
+                    <Badge 
                       variant={keywordCategory === 'positive' ? "default" : "outline"} 
                       className="cursor-pointer hover:scale-105 transition-transform bg-green-100 text-green-800 hover:bg-green-200"
                       onClick={() => setKeywordCategory('positive')}
@@ -637,6 +702,15 @@ const GroupCharacteristics = () => {
                                   case 'neutral':
                                     badgeClasses += "bg-gray-600 hover:bg-gray-700";
                                     break;
+                                  case 'academic':
+                                    badgeClasses += "bg-blue-600 hover:bg-blue-700";
+                                    break;
+                                  case 'effort':
+                                    badgeClasses += "bg-yellow-600 hover:bg-yellow-700";
+                                    break;
+                                  case 'social':
+                                    badgeClasses += "bg-purple-600 hover:bg-purple-700";
+                                    break;
                                   default:
                                     badgeClasses += "bg-edu-primary hover:bg-edu-primary/90";
                                 }
@@ -650,6 +724,15 @@ const GroupCharacteristics = () => {
                                     break;
                                   case 'neutral':
                                     badgeClasses += "border-gray-300 hover:bg-gray-100 text-gray-800";
+                                    break;
+                                  case 'academic':
+                                    badgeClasses += "border-blue-300 hover:bg-blue-100 text-blue-800";
+                                    break;
+                                  case 'effort':
+                                    badgeClasses += "border-yellow-300 hover:bg-yellow-100 text-yellow-800";
+                                    break;
+                                  case 'social':
+                                    badgeClasses += "border-purple-300 hover:bg-purple-100 text-purple-800";
                                     break;
                                   default:
                                     badgeClasses += "";
