@@ -1,5 +1,8 @@
-
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const API_URL = "https://api.newlxp.ru/graphql";
 
@@ -297,78 +300,91 @@ export const disciplinesAPI = {
     }
   },
   
-  // Updated PDF generation implementation
+  // Updated PDF generation implementation with jsPDF
   generateGroupCharacteristicsPDF: async (data: any) => {
-    console.log('Generating PDF with data:', data);
+    console.log('Generating PDF with jsPDF:', data);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create a new PDF document
+      const doc = new jsPDF();
       
-      // Generate document content
-      const pdfContent = generateDocumentContent(data, 'pdf');
+      // Set up fonts
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text('A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ', 20, 20);
       
-      // Create a proper PDF blob
-      // This is a simple approach - in production, you might use a PDF library
-      const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Характеристика группы</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 40px; }
-          h1 { color: #4a5568; text-align: center; }
-          .header { text-align: center; margin-bottom: 20px; }
-          .section { margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 10px; }
-          .student { margin-bottom: 15px; }
-          .footer { margin-top: 30px; text-align: center; font-size: 0.8em; color: #718096; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ</h1>
-          <p>Группа: ${data.groupName || 'Не указано'}</p>
-          <p>Дисциплина: ${data.disciplineName || 'Не указано'}</p>
-          <p>Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}</p>
-          ${data.averageScore !== undefined ? `<p>Средний балл группы: ${data.averageScore}</p>` : ''}
-        </div>
-        
-        <div class="section">
-          <h2>ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ</h2>
-          <p>${data.groupComment || 'Не указана'}</p>
-        </div>
-        
-        <div class="section">
-          <h2>ХАРАКТЕРИСТИКИ СТУДЕНТОВ</h2>
-          ${data.students.map((student: any, index: number) => `
-            <div class="student">
-              <h3>${index + 1}. ${student.fullName}</h3>
-              <p>Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})</p>
-              <p>Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}</p>
-              <p>Индивидуальный комментарий: ${student.comment || 'не указан'}</p>
-            </div>
-          `).join('')}
-        </div>
-        
-        <div class="footer">
-          <p>A-K Project - Документ сгенерирован системой</p>
-        </div>
-      </body>
-      </html>
-      `;
+      // Basic info
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(`Группа: ${data.groupName || 'Не указано'}`, 20, 30);
+      doc.text(`Дисциплина: ${data.disciplineName || 'Не указано'}`, 20, 40);
+      doc.text(`Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}`, 20, 50);
       
-      // In a real implementation, you would convert HTML to PDF
-      // Here we're making a simple PDF-like format as a demonstration
-      const mockPdfBlob = new Blob([htmlContent], {type: 'application/pdf'});
+      if (data.averageScore !== undefined) {
+        doc.text(`Средний балл группы: ${data.averageScore}`, 20, 60);
+      }
       
-      // Create download link
-      const url = URL.createObjectURL(mockPdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`;
-      link.click();
+      // Group comment section
+      doc.setFont("helvetica", "bold");
+      doc.text('ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ', 20, 75);
+      doc.setFont("helvetica", "normal");
       
-      URL.revokeObjectURL(url);
+      // Handle multiline comments with word wrapping
+      const groupCommentLines = doc.splitTextToSize(data.groupComment || 'Не указана', 170);
+      doc.text(groupCommentLines, 20, 85);
+      
+      // Students section
+      let yPosition = 85 + (groupCommentLines.length * 7);
+      doc.setFont("helvetica", "bold");
+      doc.text('ХАРАКТЕРИСТИКИ СТУДЕНТОВ', 20, yPosition);
+      doc.setFont("helvetica", "normal");
+      
+      yPosition += 10;
+      
+      // Add students details
+      if (data.students && data.students.length > 0) {
+        data.students.forEach((student: any, index: number) => {
+          // Student name and scores
+          doc.setFont("helvetica", "bold");
+          doc.text(`${index + 1}. ${student.fullName}`, 20, yPosition);
+          yPosition += 7;
+          doc.setFont("helvetica", "normal");
+          
+          doc.text(`Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})`, 25, yPosition);
+          yPosition += 7;
+          
+          const keywordsText = `Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}`;
+          const keywordLines = doc.splitTextToSize(keywordsText, 165);
+          doc.text(keywordLines, 25, yPosition);
+          yPosition += keywordLines.length * 7;
+          
+          const commentText = `Индивидуальный комментарий: ${student.comment || 'не указан'}`;
+          const commentLines = doc.splitTextToSize(commentText, 165);
+          doc.text(commentLines, 25, yPosition);
+          yPosition += commentLines.length * 7 + 5;
+          
+          // Add a new page if needed
+          if (yPosition > 270) {
+            doc.addPage();
+            yPosition = 20;
+          }
+        });
+      } else {
+        doc.text('Информация о студентах отсутствует', 20, yPosition);
+        yPosition += 10;
+      }
+      
+      // Footer
+      if (yPosition > 270) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      
+      doc.setFontSize(10);
+      doc.text('A-K Project - Документ сгенерирован системой', 20, 280);
+      
+      // Save the PDF
+      doc.save(`A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`);
       return true;
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -376,96 +392,137 @@ export const disciplinesAPI = {
     }
   },
   
-  // Updated Word document generation implementation with proper DOCX-like format
+  // Updated Word document generation implementation with docx library
   generateGroupCharacteristicsWord: async (data: any) => {
-    console.log('Generating Word document with data:', data);
+    console.log('Generating Word document with docx library:', data);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Create a Word-like XML structure (simplified for demonstration)
-      const wordXML = `
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    <w:p><w:r><w:t>A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Группа: ${data.groupName || 'Не указано'}</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Дисциплина: ${data.disciplineName || 'Не указано'}</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}</w:t></w:r></w:p>
-    ${data.averageScore !== undefined ? `<w:p><w:r><w:t>Средний балл группы: ${data.averageScore}</w:t></w:r></w:p>` : ''}
-    
-    <w:p><w:r><w:t>ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ</w:t></w:r></w:p>
-    <w:p><w:r><w:t>${data.groupComment || 'Не указана'}</w:t></w:r></w:p>
-    
-    <w:p><w:r><w:t>ХАРАКТЕРИСТИКИ СТУДЕНТОВ</w:t></w:r></w:p>
-    ${data.students.map((student: any, index: number) => `
-      <w:p><w:r><w:t>${index + 1}. ${student.fullName}</w:t></w:r></w:p>
-      <w:p><w:r><w:t>Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})</w:t></w:r></w:p>
-      <w:p><w:r><w:t>Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}</w:t></w:r></w:p>
-      <w:p><w:r><w:t>Индивидуальный комментарий: ${student.comment || 'не указан'}</w:t></w:r></w:p>
-    `).join('')}
-    
-    <w:p><w:r><w:t>A-K Project - Документ сгенерирован системой</w:t></w:r></w:p>
-  </w:body>
-</w:document>`;
-      
-      // Convert to HTML for easier viewing - in real implementation use proper DOCX format
-      const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Характеристика группы</title>
-        <style>
-          body { font-family: Calibri, sans-serif; padding: 40px; }
-          h1 { color: #2b579a; }
-          .section { margin-top: 20px; }
-          .student { margin-bottom: 15px; }
-          .footer { margin-top: 30px; font-size: 0.8em; color: #718096; }
-        </style>
-      </head>
-      <body>
-        <h1>A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ</h1>
-        <p>Группа: ${data.groupName || 'Не указано'}</p>
-        <p>Дисциплина: ${data.disciplineName || 'Не указано'}</p>
-        <p>Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}</p>
-        ${data.averageScore !== undefined ? `<p>Средний балл группы: ${data.averageScore}</p>` : ''}
+      // Create document sections
+      const children = [
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: 'A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ',
+              bold: true,
+              size: 32,
+            }),
+          ],
+          heading: HeadingLevel.HEADING_1,
+          spacing: { after: 200 }
+        }),
         
-        <div class="section">
-          <h2>ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ</h2>
-          <p>${data.groupComment || 'Не указана'}</p>
-        </div>
-        
-        <div class="section">
-          <h2>ХАРАКТЕРИСТИКИ СТУДЕНТОВ</h2>
-          ${data.students.map((student: any, index: number) => `
-            <div class="student">
-              <h3>${index + 1}. ${student.fullName}</h3>
-              <p>Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})</p>
-              <p>Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}</p>
-              <p>Индивидуальный комментарий: ${student.comment || 'не указан'}</p>
-            </div>
-          `).join('')}
-        </div>
-        
-        <div class="footer">
-          <p>A-K Project - Документ сгенерирован системой (Microsoft Word)</p>
-        </div>
-      </body>
-      </html>`;
+        new Paragraph({
+          children: [new TextRun({ text: `Группа: ${data.groupName || 'Не указано'}` })],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Дисциплина: ${data.disciplineName || 'Не указано'}` })],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}` })],
+          spacing: { after: 100 }
+        }),
+      ];
       
-      // In a real implementation, you would use a DOCX generation library
-      // Here we're using HTML packed as a .docx file for demonstration
-      const blob = new Blob([htmlContent], {type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+      // Add average score if available
+      if (data.averageScore !== undefined) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `Средний балл группы: ${data.averageScore}` })],
+            spacing: { after: 200 }
+          })
+        );
+      }
       
-      // Download the file
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.docx`;
-      link.click();
+      // Group comment section
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ', bold: true })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { after: 200 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: data.groupComment || 'Не указана' })],
+          spacing: { after: 400 }
+        })
+      );
       
-      URL.revokeObjectURL(url);
+      // Students section
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'ХАРАКТЕРИСТИКИ СТУДЕНТОВ', bold: true })],
+          heading: HeadingLevel.HEADING_2,
+          spacing: { after: 200 }
+        })
+      );
+      
+      // Add students details
+      if (data.students && data.students.length > 0) {
+        data.students.forEach((student: any, index: number) => {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ 
+                text: `${index + 1}. ${student.fullName}`, 
+                bold: true,
+                size: 24
+              })],
+              spacing: { after: 100 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ 
+                text: `Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})` 
+              })],
+              indent: { left: 500 },
+              spacing: { after: 100 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ 
+                text: `Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}` 
+              })],
+              indent: { left: 500 },
+              spacing: { after: 100 }
+            }),
+            new Paragraph({
+              children: [new TextRun({ 
+                text: `Индивидуальный комментарий: ${student.comment || 'не указан'}` 
+              })],
+              indent: { left: 500 },
+              spacing: { after: 300 }
+            })
+          );
+        });
+      } else {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: 'Информация о студентах отсутствует' })],
+            spacing: { after: 200 }
+          })
+        );
+      }
+      
+      // Footer
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ 
+            text: 'A-K Project - Документ сгенерирован системой',
+            size: 18
+          })],
+          spacing: { after: 100 }
+        })
+      );
+      
+      // Create the document with all sections
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: children
+        }]
+      });
+      
+      // Generate and save the document
+      const blob = await Packer.toBlob(doc);
+      saveAs(blob, `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.docx`);
       return true;
     } catch (error) {
       console.error('Error generating Word document:', error);
@@ -473,130 +530,62 @@ export const disciplinesAPI = {
     }
   },
   
-  // Updated Excel spreadsheet generation implementation with proper XLSX format structure
+  // Updated Excel spreadsheet generation implementation with xlsx library
   generateGroupCharacteristicsExcel: async (data: any) => {
-    console.log('Generating Excel spreadsheet with data:', data);
+    console.log('Generating Excel spreadsheet with xlsx library:', data);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
       
-      // Basic structure for Excel XML (simplified for demonstration)
-      const excelXML = `
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet">
-  <Worksheet ss:Name="Характеристика группы">
-    <Table>
-      <Row><Cell><Data ss:Type="String">A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ</Data></Cell></Row>
-      <Row><Cell><Data ss:Type="String">Группа: ${data.groupName || 'Не указано'}</Data></Cell></Row>
-      <Row><Cell><Data ss:Type="String">Дисциплина: ${data.disciplineName || 'Не указано'}</Data></Cell></Row>
-      <Row><Cell><Data ss:Type="String">Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}</Data></Cell></Row>
-      ${data.averageScore !== undefined ? `<Row><Cell><Data ss:Type="String">Средний балл группы: ${data.averageScore}</Data></Cell></Row>` : ''}
+      // Create main info worksheet
+      const infoData = [
+        ['A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ'],
+        [],
+        ['Группа:', data.groupName || 'Не указано'],
+        ['Дисциплина:', data.disciplineName || 'Не указано'],
+        ['Дата:', data.date || new Date().toLocaleDateString('ru-RU')]
+      ];
       
-      <Row><Cell><Data ss:Type="String">ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ</Data></Cell></Row>
-      <Row><Cell><Data ss:Type="String">${data.groupComment || 'Не указана'}</Data></Cell></Row>
+      // Add average score if available
+      if (data.averageScore !== undefined) {
+        infoData.push(['Средний балл группы:', data.averageScore]);
+      }
       
-      <Row><Cell><Data ss:Type="String">ХАРАКТЕРИСТИКИ СТУДЕНТОВ</Data></Cell></Row>
-      <Row>
-        <Cell><Data ss:Type="String">№</Data></Cell>
-        <Cell><Data ss:Type="String">ФИО</Data></Cell>
-        <Cell><Data ss:Type="String">Основные баллы</Data></Cell>
-        <Cell><Data ss:Type="String">Баллы за пересдачу</Data></Cell>
-        <Cell><Data ss:Type="String">Общий балл</Data></Cell>
-        <Cell><Data ss:Type="String">Характеристики</Data></Cell>
-        <Cell><Data ss:Type="String">Комментарий</Data></Cell>
-      </Row>
-      ${data.students.map((student: any, index: number) => `
-        <Row>
-          <Cell><Data ss:Type="Number">${index + 1}</Data></Cell>
-          <Cell><Data ss:Type="String">${student.fullName}</Data></Cell>
-          <Cell><Data ss:Type="Number">${student.mainScore}</Data></Cell>
-          <Cell><Data ss:Type="Number">${student.retakeScore}</Data></Cell>
-          <Cell><Data ss:Type="Number">${student.totalScore}</Data></Cell>
-          <Cell><Data ss:Type="String">${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}</Data></Cell>
-          <Cell><Data ss:Type="String">${student.comment || 'не указан'}</Data></Cell>
-        </Row>
-      `).join('')}
+      infoData.push(
+        [],
+        ['ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ'],
+        [data.groupComment || 'Не указана'],
+        []
+      );
       
-      <Row><Cell><Data ss:Type="String">A-K Project - Документ сгенерирован системой</Data></Cell></Row>
-    </Table>
-  </Worksheet>
-</Workbook>`;
-
-      // Convert to HTML representation of an Excel table for demonstration
-      const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Характеристика группы</title>
-        <style>
-          body { font-family: Calibri, sans-serif; padding: 20px; }
-          h1 { color: #217346; }
-          table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #217346; color: white; }
-          .header { margin-bottom: 20px; }
-          .footer { margin-top: 30px; font-size: 0.8em; color: #718096; }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ</h1>
-          <p>Группа: ${data.groupName || 'Не указано'}</p>
-          <p>Дисциплина: ${data.disciplineName || 'Не указано'}</p>
-          <p>Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}</p>
-          ${data.averageScore !== undefined ? `<p>Средний балл группы: ${data.averageScore}</p>` : ''}
-        </div>
-        
-        <h2>ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ</h2>
-        <p>${data.groupComment || 'Не указана'}</p>
-        
-        <h2>ХАРАКТЕРИСТИКИ СТУДЕНТОВ</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>№</th>
-              <th>ФИО</th>
-              <th>Основные баллы</th>
-              <th>Баллы за пересдачу</th>
-              <th>Общий балл</th>
-              <th>Характеристики</th>
-              <th>Комментарий</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${data.students.map((student: any, index: number) => `
-              <tr>
-                <td>${index + 1}</td>
-                <td>${student.fullName}</td>
-                <td>${student.mainScore}</td>
-                <td>${student.retakeScore}</td>
-                <td>${student.totalScore}</td>
-                <td>${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}</td>
-                <td>${student.comment || 'не указан'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        
-        <div class="footer">
-          <p>A-K Project - Документ сгенерирован системой (Microsoft Excel)</p>
-        </div>
-      </body>
-      </html>`;
+      const infoWorksheet = XLSX.utils.aoa_to_sheet(infoData);
+      XLSX.utils.book_append_sheet(workbook, infoWorksheet, 'Информация');
       
-      // In a real implementation, you would use an XLSX generation library
-      // Here we're using HTML packed as a .xlsx file for demonstration
-      const blob = new Blob([htmlContent], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+      // Create students worksheet with proper formatting
+      const studentsHeaders = ['№', 'ФИО', 'Основные баллы', 'Баллы за пересдачу', 'Общий балл', 'Характеристики', 'Комментарий'];
       
-      // Download the file
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.xlsx`;
-      link.click();
+      const studentsData = data.students.map((student: any, index: number) => [
+        index + 1,
+        student.fullName,
+        student.mainScore,
+        student.retakeScore,
+        student.totalScore,
+        student.keywords.length ? student.keywords.join(', ') : 'не указаны',
+        student.comment || 'не указан'
+      ]);
       
-      URL.revokeObjectURL(url);
+      // Add headers to the beginning of the data array
+      studentsData.unshift(studentsHeaders);
+      
+      const studentsWorksheet = XLSX.utils.aoa_to_sheet(studentsData);
+      XLSX.utils.book_append_sheet(workbook, studentsWorksheet, 'Студенты');
+      
+      // Generate and save the Excel file
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(blob, `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.xlsx`);
+      
       return true;
     } catch (error) {
       console.error('Error generating Excel spreadsheet:', error);
@@ -604,67 +593,5 @@ export const disciplinesAPI = {
     }
   }
 };
-
-// Helper function to generate document content
-function generateDocumentContent(data: any, format: 'pdf' | 'word' | 'excel') {
-  // In a real implementation, this would use a proper library to generate the document
-  // For the purposes of this demo, we're creating a mock text representation
-  
-  let content = '';
-  
-  // Header with A-K Project branding
-  content += '==========================================\n';
-  content += `        A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ (${format.toUpperCase()})\n`;
-  content += '==========================================\n\n';
-  
-  // Group and discipline info
-  content += `Группа: ${data.groupName || 'Не указано'}\n`;
-  content += `Дисциплина: ${data.disciplineName || 'Не указано'}\n`;
-  content += `Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}\n`;
-  content += `Формат: ${format.toUpperCase()}\n`;
-  
-  // Only show average score if it's available
-  if (data.averageScore !== null && data.averageScore !== undefined) {
-    content += `Средний балл группы: ${data.averageScore}\n`;
-  }
-  
-  content += '\n';
-  
-  // Group comment
-  content += '==========================================\n';
-  content += 'ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ\n';
-  content += '==========================================\n';
-  content += data.groupComment || 'Не указана\n\n';
-  
-  // Students
-  content += '==========================================\n';
-  content += 'ХАРАКТЕРИСТИКИ СТУДЕНТОВ\n';
-  content += '==========================================\n\n';
-  
-  if (data.students && data.students.length > 0) {
-    data.students.forEach((student: any, index: number) => {
-      content += `${index + 1}. ${student.fullName}\n`;
-      content += `   - Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})\n`;
-      content += '   - Характеристики: ' + (student.keywords.length ? student.keywords.join(', ') : 'не указаны') + '\n';
-      content += '   - Индивидуальный комментарий: ' + (student.comment || 'не указан') + '\n\n';
-    });
-  } else {
-    content += 'Информация о студентах отсутствует\n';
-  }
-  
-  // Footer with A-K Project branding
-  content += '==========================================\n';
-  content += `      A-K Project - Документ сгенерирован системой (${format.toUpperCase()})      \n`;
-  content += '==========================================\n';
-  
-  // Add format-specific note
-  if (format === 'word') {
-    content += '\nДокумент сгенерирован в формате Microsoft Word\n';
-  } else if (format === 'excel') {
-    content += '\nДокумент сгенерирован в формате Microsoft Excel с таблицей данных\n';
-  }
-  
-  return content;
-}
 
 export default api;
