@@ -1,7 +1,5 @@
 import axios from 'axios';
-import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle } from 'docx';
-import * as XLSX from 'xlsx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 import { saveAs } from 'file-saver';
 
 const API_URL = "https://api.newlxp.ru/graphql";
@@ -300,98 +298,6 @@ export const disciplinesAPI = {
     }
   },
   
-  // Updated PDF generation implementation with jsPDF
-  generateGroupCharacteristicsPDF: async (data: any) => {
-    console.log('Generating PDF with jsPDF:', data);
-    
-    try {
-      // Create a new PDF document
-      const doc = new jsPDF();
-      
-      // Set up fonts
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.text('A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ', 20, 20);
-      
-      // Basic info
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(12);
-      doc.text(`Группа: ${data.groupName || 'Не указано'}`, 20, 30);
-      doc.text(`Дисциплина: ${data.disciplineName || 'Не указано'}`, 20, 40);
-      doc.text(`Дата: ${data.date || new Date().toLocaleDateString('ru-RU')}`, 20, 50);
-      
-      if (data.averageScore !== undefined) {
-        doc.text(`Средний балл группы: ${data.averageScore}`, 20, 60);
-      }
-      
-      // Group comment section
-      doc.setFont("helvetica", "bold");
-      doc.text('ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ', 20, 75);
-      doc.setFont("helvetica", "normal");
-      
-      // Handle multiline comments with word wrapping
-      const groupCommentLines = doc.splitTextToSize(data.groupComment || 'Не указана', 170);
-      doc.text(groupCommentLines, 20, 85);
-      
-      // Students section
-      let yPosition = 85 + (groupCommentLines.length * 7);
-      doc.setFont("helvetica", "bold");
-      doc.text('ХАРАКТЕРИСТИКИ СТУДЕНТОВ', 20, yPosition);
-      doc.setFont("helvetica", "normal");
-      
-      yPosition += 10;
-      
-      // Add students details
-      if (data.students && data.students.length > 0) {
-        data.students.forEach((student: any, index: number) => {
-          // Student name and scores
-          doc.setFont("helvetica", "bold");
-          doc.text(`${index + 1}. ${student.fullName}`, 20, yPosition);
-          yPosition += 7;
-          doc.setFont("helvetica", "normal");
-          
-          doc.text(`Баллы: ${student.totalScore} (основные: ${student.mainScore}, пересдача: ${student.retakeScore})`, 25, yPosition);
-          yPosition += 7;
-          
-          const keywordsText = `Характеристики: ${student.keywords.length ? student.keywords.join(', ') : 'не указаны'}`;
-          const keywordLines = doc.splitTextToSize(keywordsText, 165);
-          doc.text(keywordLines, 25, yPosition);
-          yPosition += keywordLines.length * 7;
-          
-          const commentText = `Индивидуальный комментарий: ${student.comment || 'не указан'}`;
-          const commentLines = doc.splitTextToSize(commentText, 165);
-          doc.text(commentLines, 25, yPosition);
-          yPosition += commentLines.length * 7 + 5;
-          
-          // Add a new page if needed
-          if (yPosition > 270) {
-            doc.addPage();
-            yPosition = 20;
-          }
-        });
-      } else {
-        doc.text('Информация о студентах отсутствует', 20, yPosition);
-        yPosition += 10;
-      }
-      
-      // Footer
-      if (yPosition > 270) {
-        doc.addPage();
-        yPosition = 20;
-      }
-      
-      doc.setFontSize(10);
-      doc.text('A-K Project - Документ сгенерирован системой', 20, 280);
-      
-      // Save the PDF
-      doc.save(`A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.pdf`);
-      return true;
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-      throw error;
-    }
-  },
-  
   // Updated Word document generation implementation with docx library
   generateGroupCharacteristicsWord: async (data: any) => {
     console.log('Generating Word document with docx library:', data);
@@ -526,69 +432,6 @@ export const disciplinesAPI = {
       return true;
     } catch (error) {
       console.error('Error generating Word document:', error);
-      throw error;
-    }
-  },
-  
-  // Updated Excel spreadsheet generation implementation with xlsx library
-  generateGroupCharacteristicsExcel: async (data: any) => {
-    console.log('Generating Excel spreadsheet with xlsx library:', data);
-    
-    try {
-      // Create workbook
-      const workbook = XLSX.utils.book_new();
-      
-      // Create main info worksheet
-      const infoData = [
-        ['A-K Project - ХАРАКТЕРИСТИКА ГРУППЫ'],
-        [],
-        ['Группа:', data.groupName || 'Не указано'],
-        ['Дисциплина:', data.disciplineName || 'Не указано'],
-        ['Дата:', data.date || new Date().toLocaleDateString('ru-RU')]
-      ];
-      
-      // Add average score if available
-      if (data.averageScore !== undefined) {
-        infoData.push(['Средний балл группы:', data.averageScore]);
-      }
-      
-      infoData.push(
-        [],
-        ['ОБЩАЯ ХАРАКТЕРИСТИКА ГРУППЫ'],
-        [data.groupComment || 'Не указана'],
-        []
-      );
-      
-      const infoWorksheet = XLSX.utils.aoa_to_sheet(infoData);
-      XLSX.utils.book_append_sheet(workbook, infoWorksheet, 'Информация');
-      
-      // Create students worksheet with proper formatting
-      const studentsHeaders = ['№', 'ФИО', 'Основные баллы', 'Баллы за пересдачу', 'Общий балл', 'Характеристики', 'Комментарий'];
-      
-      const studentsData = data.students.map((student: any, index: number) => [
-        index + 1,
-        student.fullName,
-        student.mainScore,
-        student.retakeScore,
-        student.totalScore,
-        student.keywords.length ? student.keywords.join(', ') : 'не указаны',
-        student.comment || 'не указан'
-      ]);
-      
-      // Add headers to the beginning of the data array
-      studentsData.unshift(studentsHeaders);
-      
-      const studentsWorksheet = XLSX.utils.aoa_to_sheet(studentsData);
-      XLSX.utils.book_append_sheet(workbook, studentsWorksheet, 'Студенты');
-      
-      // Generate and save the Excel file
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const blob = new Blob([excelBuffer], { type: 'application/octet-stream' });
-      saveAs(blob, `A-K_Project_Характеристика_группы_${data.groupName || 'группа'}_${new Date().toLocaleDateString().replace(/\./g, '-')}.xlsx`);
-      
-      return true;
-    } catch (error) {
-      console.error('Error generating Excel spreadsheet:', error);
       throw error;
     }
   }

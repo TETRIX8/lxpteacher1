@@ -107,8 +107,6 @@ interface FormValues {
   groupComment: string;
 }
 
-type DocumentFormat = 'pdf' | 'word' | 'excel';
-
 const GroupCharacteristics = () => {
   const { disciplineId, groupId } = useParams<{ disciplineId: string, groupId: string }>();
   const [students, setStudents] = useState<Student[]>([]);
@@ -125,7 +123,6 @@ const GroupCharacteristics = () => {
   const [appendingText, setAppendingText] = useState<{ studentIndex: number; text: string | null }>({ studentIndex: -1, text: null });
   const [enhancingStudentIndex, setEnhancingStudentIndex] = useState<number | null>(null);
   const [enhancingGroup, setEnhancingGroup] = useState(false);
-  const [generatingFormat, setGeneratingFormat] = useState<DocumentFormat | null>(null);
   
   const isMobile = useIsMobile();
   
@@ -325,35 +322,21 @@ const GroupCharacteristics = () => {
     setIsPreviewOpen(true);
   };
 
-  const generateDocument = async (data: FormValues, format: DocumentFormat) => {
-    setGeneratingFormat(format);
+  const generateDocument = async (data: FormValues) => {
     setGenerating(true);
     
     try {
       // Prepare comprehensive data for document generation
       const docData = preparePreviewData(data);
       
-      // Call the API to generate and download the document with all data
-      switch (format) {
-        case 'pdf':
-          await disciplinesAPI.generateGroupCharacteristicsPDF(docData);
-          toast.success('PDF характеристика успешно сгенерирована и скачана');
-          break;
-        case 'word':
-          await disciplinesAPI.generateGroupCharacteristicsWord(docData);
-          toast.success('Word характеристика успешно сгенерирована и скачана');
-          break;
-        case 'excel':
-          await disciplinesAPI.generateGroupCharacteristicsExcel(docData);
-          toast.success('Excel характеристика успешно сгенерирована и скачана');
-          break;
-      }
+      // Call the API to generate and download the Word document
+      await disciplinesAPI.generateGroupCharacteristicsWord(docData);
+      toast.success('Word характеристика успешно сгенерирована и скачана');
     } catch (error) {
-      console.error(`Error generating ${format.toUpperCase()} document:`, error);
-      toast.error(`Ошибка при создании ${format.toUpperCase()} характеристики`);
+      console.error('Error generating Word document:', error);
+      toast.error('Ошибка при создании Word характеристики');
     } finally {
       setGenerating(false);
-      setGeneratingFormat(null);
     }
   };
 
@@ -503,7 +486,7 @@ const GroupCharacteristics = () => {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit((data) => generateDocument(data, 'pdf'))} className="space-y-8">
+          <form onSubmit={form.handleSubmit((data) => generateDocument(data))} className="space-y-8">
             <div className="space-y-6">
               <Card className="animate-fade-in">
                 <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -723,55 +706,23 @@ const GroupCharacteristics = () => {
                 Предпросмотр
               </Button>
               
-              {/* Replace single button with dropdown menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    disabled={generating}
-                    className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
-                  >
-                    {generating ? (
-                      <>
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        {generatingFormat === 'pdf' && 'Создание PDF...'}
-                        {generatingFormat === 'word' && 'Создание Word...'}
-                        {generatingFormat === 'excel' && 'Создание Excel...'}
-                      </>
-                    ) : (
-                      <>
-                        <Download className="h-4 w-4" />
-                        Сгенерировать и скачать
-                      </>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem 
-                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'pdf'))()}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
+              <Button
+                type="submit"
+                disabled={generating}
+                className="flex items-center gap-2 hover:scale-105 transition-transform animate-fade-in"
+              >
+                {generating ? (
+                  <>
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Создание Word...
+                  </>
+                ) : (
+                  <>
                     <FileText className="h-4 w-4" />
-                    <span>PDF документ</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'word'))()}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Word документ</span>
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuItem 
-                    onClick={() => form.handleSubmit((data) => generateDocument(data, 'excel'))()}
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    <span>Excel таблица</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    Сгенерировать Word
+                  </>
+                )}
+              </Button>
             </div>
           </form>
         </Form>
