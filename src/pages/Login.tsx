@@ -133,7 +133,7 @@ const Login = () => {
                 </p>
                 <div className="space-y-1 text-xs text-blue-700 dark:text-blue-300">
                   <p><strong>Email:</strong> evloevam@magas.ithub.ru</p>
-                  <p><strong>Пароль:</strong> 1Q2w3a4e$#</p>
+                  <p><strong>Пароль:</strong> 1*******</p>
                 </div>
               </div>
             </CardFooter>
