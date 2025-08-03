@@ -19,6 +19,7 @@ import GroupStudents from "./pages/GroupStudents";
 import GroupCharacteristics from "./pages/GroupCharacteristics";
 import Groups from "./pages/Groups";
 import Settings from "./pages/Settings";
+import TestAI from "./pages/TestAI";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,7 @@ const App = () => {
                   <Route path="disciplines/:disciplineId/groups/:groupId/characteristics" element={<GroupCharacteristics />} />
                   <Route path="groups" element={<Groups />} />
                   <Route path="settings" element={<Settings />} />
+                  <Route path="test-ai" element={<TestAI />} />
                 </Route>
 
                 {/* Catch-all route */}

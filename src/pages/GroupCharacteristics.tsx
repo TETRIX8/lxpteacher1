@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import SmartCharacteristicGenerator from '@/components/SmartCharacteristicGenerator';
 
 // Types
 interface Student {
@@ -520,6 +521,17 @@ const GroupCharacteristics = () => {
         </div>
       </div>
 
+      {/* Умный генератор характеристик */}
+      <SmartCharacteristicGenerator
+        onCharacteristicGenerated={(characteristic) => {
+          // Автоматически заполняем комментарий группы
+          form.setValue('groupComment', characteristic);
+          toast.success('Характеристика группы добавлена!');
+        }}
+        groupName={groupName}
+        isGroup={true}
+      />
+
       {loading ? (
         <div className="h-64 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-edu-primary"></div>
@@ -660,26 +672,60 @@ const GroupCharacteristics = () => {
                           </Badge>
                         </div>
                         
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => enhanceStudentComment(index)}
-                          className="mt-2 md:mt-0 flex items-center gap-2"
-                          disabled={enhancingStudentIndex === index}
-                        >
-                          {enhancingStudentIndex === index ? (
-                            <>
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              Улучшаем...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4" />
-                              Улучшить с помощью ИИ
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex gap-2 mt-2 md:mt-0">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => enhanceStudentComment(index)}
+                            className="flex items-center gap-2"
+                            disabled={enhancingStudentIndex === index}
+                          >
+                            {enhancingStudentIndex === index ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Улучшаем...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4" />
+                                Улучшить
+                              </>
+                            )}
+                          </Button>
+                          
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              // Открываем диалог для генерации характеристики студента
+                              const studentName = `${student.user.lastName || ''} ${student.user.firstName || ''} ${student.user.middleName || ''}`;
+                              const academicLevel = totalScore > 80 ? 'Отличный' : totalScore > 60 ? 'Хороший' : totalScore > 40 ? 'Средний' : 'Ниже среднего';
+                              
+                              // Генерируем характеристику на основе ключевых слов
+                              const selectedKeywords = selectedKeywordIds.map(id => getKeywordById(id)?.text).filter(Boolean);
+                              
+                              aiService.generateCharacteristicFromKeywords(studentName, selectedKeywords, academicLevel)
+                                .then(result => {
+                                  if (result.success) {
+                                    form.setValue(`studentCharacteristics.${index}.comment`, result.enhancedText);
+                                    toast.success(`Характеристика для ${studentName} сгенерирована!`);
+                                  } else {
+                                    toast.error('Ошибка генерации характеристики');
+                                  }
+                                })
+                                .catch(error => {
+                                  console.error('Error generating characteristic:', error);
+                                  toast.error('Ошибка при генерации характеристики');
+                                });
+                            }}
+                            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            Сгенерировать
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div>
