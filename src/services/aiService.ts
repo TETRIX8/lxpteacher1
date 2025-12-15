@@ -1,5 +1,4 @@
-
-// AI text enhancement service
+// AI text enhancement service using Pollinations API
 
 interface EnhanceTextResponse {
   enhancedText: string;
@@ -26,130 +25,18 @@ interface GroupCharacteristicData {
   recommendations: string[];
 }
 
-export const aiService = {
-  // Генерация характеристики студента с помощью Pollinations API
-  generateStudentCharacteristic: async (data: CharacteristicData): Promise<EnhanceTextResponse> => {
-    const prompt = `Создай профессиональную характеристику студента для педагогической документации.
-
-Студент: ${data.studentName}
-Успеваемость: ${data.academicPerformance}
-Поведение: ${data.behavior}
-Сильные стороны: ${data.strengths.join(', ')}
-Слабые стороны: ${data.weaknesses.join(', ')}
-Рекомендации: ${data.recommendations.join(', ')}
-
-Создай структурированную характеристику в следующем формате:
-1. Общая оценка успеваемости и поведения
-2. Анализ сильных сторон с примерами
-3. Области для улучшения
-4. Конкретные рекомендации для развития
-5. Прогноз дальнейшего обучения
-
-Используй педагогическую терминологию, будь объективным и конструктивным.`;
-
-    return await callPollinationsAPI(prompt);
-  },
-
-  // Генерация характеристики группы
-  generateGroupCharacteristic: async (data: GroupCharacteristicData): Promise<EnhanceTextResponse> => {
-    const prompt = `Создай профессиональную характеристику учебной группы для педагогической документации.
-
-Группа: ${data.groupName}
-Количество студентов: ${data.totalStudents}
-Общий уровень успеваемости: ${data.academicLevel}
-Групповая динамика: ${data.groupDynamics}
-Общие сильные стороны: ${data.commonStrengths.join(', ')}
-Общие проблемы: ${data.commonChallenges.join(', ')}
-Рекомендации: ${data.recommendations.join(', ')}
-
-Создай структурированную характеристику группы в следующем формате:
-1. Общая характеристика группы
-2. Анализ успеваемости и дисциплины
-3. Групповая динамика и взаимодействие
-4. Общие сильные стороны группы
-5. Проблемные области
-6. Рекомендации для улучшения работы группы
-
-Используй педагогическую терминологию, будь объективным и конструктивным.`;
-
-    return await callPollinationsAPI(prompt);
-  },
-
-  // Улучшение существующей характеристики студента
-  enhanceStudentCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
-    const prompt = `Улучши эту характеристику студента, сделав её более профессиональной, 
-    информативной и конструктивной. Используй педагогическую терминологию, где уместно. 
-    Дай только улучшенный текст без объяснений или вводных фраз. Никаких "вот улучшенная характеристика" или подобных фраз:
-    
-    ${originalText}`;
-    
-    return await callPollinationsAPI(prompt);
-  },
-  
-  // Улучшение характеристики группы
-  enhanceGroupCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
-    const prompt = `Улучши эту характеристику учебной группы, сделав её более профессиональной, 
-    информативной и конструктивной. Используй педагогическую терминологию для описания групповой динамики. 
-    Дай только улучшенный текст без объяснений, вводных или заключительных фраз. Не добавляй комментариев от себя:
-    
-    ${originalText}`;
-    
-    return await callPollinationsAPI(prompt);
-  },
-
-  // Генерация краткой характеристики на основе ключевых слов
-  generateCharacteristicFromKeywords: async (
-    studentName: string, 
-    keywords: string[], 
-    academicLevel: string
-  ): Promise<EnhanceTextResponse> => {
-    const prompt = `Создай краткую, но информативную характеристику студента на основе следующих данных:
-
-Студент: ${studentName}
-Уровень успеваемости: ${academicLevel}
-Ключевые качества: ${keywords.join(', ')}
-
-Создай характеристику в 2-3 абзаца, которая:
-- Начинается с общей оценки успеваемости
-- Описывает ключевые качества студента
-- Включает конкретные примеры проявления качеств
-- Заканчивается краткой рекомендацией для дальнейшего развития
-
-Используй педагогическую терминологию и будь конструктивным.`;
-
-    return await callPollinationsAPI(prompt);
-  },
-
-  // Генерация рекомендаций для студента
-  generateStudentRecommendations: async (
-    studentName: string,
-    strengths: string[],
-    weaknesses: string[]
-  ): Promise<EnhanceTextResponse> => {
-    const prompt = `Создай конкретные рекомендации для развития студента:
-
-Студент: ${studentName}
-Сильные стороны: ${strengths.join(', ')}
-Области для улучшения: ${weaknesses.join(', ')}
-
-Создай 3-5 конкретных рекомендаций, которые:
-- Основаны на сильных сторонах студента
-- Направлены на преодоление слабостей
-- Практически применимы
-- Включают временные рамки
-- Учитывают индивидуальный подход
-
-Формат: пронумерованный список с краткими, но конкретными рекомендациями.`;
-
-    return await callPollinationsAPI(prompt);
-  }
-};
-
-// Общая функция для вызова Pollinations API
-async function callPollinationsAPI(prompt: string): Promise<EnhanceTextResponse> {
+// Функция для вызова Pollinations API с оптимальными параметрами
+async function callPollinationsAPI(prompt: string, temperature: number = 0.8): Promise<EnhanceTextResponse> {
   try {
-    // Используем Pollinations API
-    const response = await fetch('https://text.pollinations.ai/' + encodeURIComponent(prompt));
+    const systemPrompt = encodeURIComponent(
+      "Ты профессиональный педагог-методист с 20-летним опытом. " +
+      "Создаёшь идеальные характеристики студентов: грамотные, структурированные, с конкретными примерами. " +
+      "Используй профессиональную педагогическую терминологию. Пиши на русском языке."
+    );
+    
+    const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=mistral&temperature=${temperature}&system=${systemPrompt}`;
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
@@ -163,41 +50,167 @@ async function callPollinationsAPI(prompt: string): Promise<EnhanceTextResponse>
     };
   } catch (error) {
     console.error('Error calling Pollinations API:', error);
-    
-    // Fallback к предыдущему API
-    const url = 'https://chatgpt-42.p.rapidapi.com/aitohuman';
-    
-    const options = {
-      method: 'POST',
-      headers: {
-        'x-rapidapi-key': 'ffa0249cd3mshfb71d7035c856b4p1d723ajsn807262f10334',
-        'x-rapidapi-host': 'chatgpt-42.p.rapidapi.com',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        text: prompt
-      })
+    return {
+      enhancedText: 'Не удалось сгенерировать характеристику. Попробуйте позже.',
+      success: false,
+      error: 'Ошибка подключения к сервису генерации текста.'
     };
-
-    try {
-      const fallbackResponse = await fetch(url, options);
-      
-      if (!fallbackResponse.ok) {
-        throw new Error(`HTTP error! Status: ${fallbackResponse.status}`);
-      }
-      
-      const fallbackResult = await fallbackResponse.json();
-      return {
-        enhancedText: fallbackResult.result || 'Не удалось сгенерировать характеристику.',
-        success: true
-      };
-    } catch (fallbackError) {
-      console.error('Error with fallback API:', fallbackError);
-      return {
-        enhancedText: 'Не удалось сгенерировать характеристику. Попробуйте позже.',
-        success: false,
-        error: 'Ошибка подключения к сервису генерации текста.'
-      };
-    }
   }
 }
+
+export const aiService = {
+  // Генерация идеальной характеристики студента
+  generateStudentCharacteristic: async (data: CharacteristicData): Promise<EnhanceTextResponse> => {
+    const prompt = `Создай ИДЕАЛЬНУЮ профессиональную характеристику студента для педагогической документации.
+
+ДАННЫЕ СТУДЕНТА:
+• Полное имя: ${data.studentName}
+• Уровень успеваемости: ${data.academicPerformance || 'хороший'}
+• Поведение и дисциплина: ${data.behavior || 'примерное'}
+• Ключевые достоинства: ${data.strengths.length > 0 ? data.strengths.join(', ') : 'ответственность, трудолюбие'}
+• Области для развития: ${data.weaknesses.length > 0 ? data.weaknesses.join(', ') : 'требует дополнительной мотивации'}
+• Педагогические рекомендации: ${data.recommendations.length > 0 ? data.recommendations.join(', ') : 'развивать творческий потенциал'}
+
+ТРЕБОВАНИЯ К ХАРАКТЕРИСТИКЕ:
+1. ОБЯЗАТЕЛЬНО используй имя "${data.studentName}" в тексте минимум 3-4 раза
+2. Начни с вводного абзаца: "${data.studentName} является студентом..."
+3. Структура:
+   - Общая характеристика личности и учебной деятельности
+   - Успеваемость и отношение к учёбе с конкретными примерами
+   - Поведение, дисциплина, взаимоотношения с коллективом
+   - Сильные стороны и достижения (приведи примеры проявления)
+   - Области для развития (деликатно, конструктивно)
+   - Рекомендации для дальнейшего развития
+   - Заключение с прогнозом
+
+4. Объём: 4-5 полных абзацев
+5. Стиль: официально-деловой, но не сухой
+6. Каждое качество подкрепляй примером проявления
+7. Заверши позитивной перспективой развития
+
+Пиши характеристику БЕЗ заголовков и нумерации, сплошным текстом с абзацами.`;
+
+    return await callPollinationsAPI(prompt, 0.7);
+  },
+
+  // Генерация характеристики группы
+  generateGroupCharacteristic: async (data: GroupCharacteristicData): Promise<EnhanceTextResponse> => {
+    const prompt = `Создай ИДЕАЛЬНУЮ профессиональную характеристику учебной группы.
+
+ДАННЫЕ ГРУППЫ:
+• Название группы: ${data.groupName}
+• Количество студентов: ${data.totalStudents || 25}
+• Общий уровень успеваемости: ${data.academicLevel || 'хороший'}
+• Групповая динамика: ${data.groupDynamics || 'сплочённый коллектив'}
+• Сильные стороны группы: ${data.commonStrengths.length > 0 ? data.commonStrengths.join(', ') : 'активность, взаимопомощь'}
+• Проблемные области: ${data.commonChallenges.length > 0 ? data.commonChallenges.join(', ') : 'требуется повышение мотивации'}
+• Рекомендации: ${data.recommendations.length > 0 ? data.recommendations.join(', ') : 'развивать командную работу'}
+
+ТРЕБОВАНИЯ:
+1. Используй название группы "${data.groupName}" в тексте
+2. Структура характеристики:
+   - Общая характеристика группы и её особенности
+   - Анализ успеваемости с примерами
+   - Групповая динамика и климат в коллективе
+   - Сильные стороны группы
+   - Области для улучшения
+   - Конкретные рекомендации
+   - Перспективы развития группы
+
+3. Объём: 4-5 абзацев
+4. Стиль: профессиональный, конструктивный
+
+Пиши БЕЗ заголовков и нумерации, сплошным текстом.`;
+
+    return await callPollinationsAPI(prompt, 0.7);
+  },
+
+  // Быстрая генерация на основе ключевых слов
+  generateCharacteristicFromKeywords: async (
+    studentName: string, 
+    keywords: string[], 
+    academicLevel: string
+  ): Promise<EnhanceTextResponse> => {
+    const prompt = `Создай краткую ИДЕАЛЬНУЮ характеристику студента.
+
+ДАННЫЕ:
+• Имя студента: ${studentName}
+• Уровень успеваемости: ${academicLevel || 'хороший'}
+• Ключевые качества: ${keywords.join(', ')}
+
+ТРЕБОВАНИЯ:
+1. ОБЯЗАТЕЛЬНО используй имя "${studentName}" минимум 2-3 раза
+2. Начни: "${studentName} является..."
+3. Раскрой каждое качество с примером его проявления
+4. Объём: 2-3 абзаца
+5. Заверши позитивной рекомендацией
+
+Пиши сплошным текстом без заголовков.`;
+
+    return await callPollinationsAPI(prompt, 0.8);
+  },
+
+  // Улучшение существующей характеристики
+  enhanceStudentCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
+    const prompt = `Улучши эту характеристику студента, сделав её ИДЕАЛЬНОЙ:
+
+ОРИГИНАЛ:
+${originalText}
+
+ЗАДАЧА:
+1. Сохрани все упомянутые имена и факты
+2. Добавь профессиональную педагогическую терминологию
+3. Расширь каждый тезис конкретными примерами
+4. Улучши структуру и логику изложения
+5. Добавь конструктивные рекомендации
+6. Заверши позитивным прогнозом
+
+Дай ТОЛЬКО улучшенный текст, без комментариев.`;
+    
+    return await callPollinationsAPI(prompt, 0.6);
+  },
+  
+  // Улучшение характеристики группы
+  enhanceGroupCharacteristic: async (originalText: string): Promise<EnhanceTextResponse> => {
+    const prompt = `Улучши эту характеристику учебной группы, сделав её ИДЕАЛЬНОЙ:
+
+ОРИГИНАЛ:
+${originalText}
+
+ЗАДАЧА:
+1. Сохрани название группы и все факты
+2. Добавь педагогическую терминологию
+3. Расширь описание групповой динамики
+4. Добавь конкретные примеры
+5. Включи конструктивные рекомендации
+
+Дай ТОЛЬКО улучшенный текст, без комментариев.`;
+
+    return await callPollinationsAPI(prompt, 0.6);
+  },
+
+  // Генерация рекомендаций для студента
+  generateStudentRecommendations: async (
+    studentName: string,
+    strengths: string[],
+    weaknesses: string[]
+  ): Promise<EnhanceTextResponse> => {
+    const prompt = `Создай персональные рекомендации для развития студента.
+
+ДАННЫЕ:
+• Студент: ${studentName}
+• Сильные стороны: ${strengths.join(', ')}
+• Области для развития: ${weaknesses.join(', ')}
+
+Создай 5 конкретных рекомендаций для ${studentName}:
+1. Основаны на сильных сторонах
+2. Направлены на преодоление слабостей
+3. Практически применимы
+4. С конкретными действиями
+5. С ожидаемыми результатами
+
+Формат: пронумерованный список.`;
+
+    return await callPollinationsAPI(prompt, 0.7);
+  }
+};
