@@ -34,7 +34,7 @@ async function callPollinationsAPI(prompt: string, temperature: number = 0.8): P
       "Используй профессиональную педагогическую терминологию. Пиши на русском языке."
     );
     
-    const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=mistral&temperature=${temperature}&system=${systemPrompt}`;
+    const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?temperature=${temperature}&system=${systemPrompt}`;
     
     const response = await fetch(url);
     
